@@ -1,7 +1,7 @@
 ### 👋 Hi, I'm Elvis Obi
 
 🎨&nbsp; Design Engineer. I've been designing products since 2019.<br>
-🧩&nbsp; Co-founded [FiveBlooded](https://x.com/FiveBlooded) and raised over $350,000 (USD) for [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game.<br>
+🧩&nbsp; Co-founded [FiveBlooded](https://x.com/FiveBlooded) the studio building [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game.<br>
 🪽&nbsp; Founder of [Halfwings](https://x.com/HalfwingsInc), the software and hardware development partner for technology businesses.<br>
 🛠️&nbsp; Building [Hearth](https://github.com/obileonardo/hearth-macos), [Clepso](https://github.com/obileonardo/clepso) and [Builders World](https://github.com/builders-world/builders-world).<br>
 🎤&nbsp; Featured by [Figma at Config 2022](https://www.youtube.com/watch?v=JUTFghsG8nI), and also [mentored 500+ design students](https://adplist.org/mentors/elvis-obi) across multiple platforms.<br>
