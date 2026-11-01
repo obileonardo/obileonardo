@@ -86,7 +86,7 @@ const SEALS = [
   { id: 'x', handle: '@TheObiLeonard', label: 'X', mark: 'X', url: 'https://x.com/TheObiLeonard', alt: 'X: @TheObiLeonard' },
   { id: 'linkedin', handle: 'in/elvisobi', label: 'LinkedIn', mark: 'in', url: 'https://www.linkedin.com/in/elvisobi', alt: 'LinkedIn: in/elvisobi' },
   { id: 'contra', handle: 'contra.com/elvisobi', label: 'Contra', mark: 'C', url: 'https://contra.com/elvisobi', alt: 'Contra: elvisobi' },
-  { id: 'letter', handle: 'contact@elvisobi.com', label: 'Write a letter', mark: '@', url: 'mailto:contact@elvisobi.com?subject=A%20letter%20for%20Elvis', alt: 'Email: contact@elvisobi.com' },
+  { id: 'letter', row: true, handle: 'contact@elvisobi.com', label: 'Write a letter', mark: '@', url: 'mailto:contact@elvisobi.com?subject=A%20letter%20for%20Elvis', alt: 'Email: contact@elvisobi.com' },
 ];
 
 
@@ -110,13 +110,13 @@ const ARMOURY = [
 ];
 
 // Two looks share one layout:
-//   clean (live): Geist, rounded cards, hairlines, soft neutral surfaces.
+//   clean (live): square cards, hairlines, soft neutral surfaces; Doto and Geist Mono.
 //   pixel: Doto, stepped pixel frames, brass studs, dotted rules.
 // Build the pixel look with `PROFILE_STYLE=pixel node scripts/build.mjs`; the workflow builds clean.
 const STYLE = process.env.PROFILE_STYLE === 'pixel' ? 'pixel' : 'clean';
 const PIXEL = STYLE === 'pixel';
-const caps = (s) => (PIXEL ? s.toUpperCase() : s); // display names: capitals in Doto, as written in Geist
-const ds = (n) => (PIXEL ? n : 0); // display letter spacing: Doto's dots want air, Geist doesn't
+const caps = (s) => (PIXEL ? s.toUpperCase() : s); // display names: all capitals in the pixel style, as written in clean
+const ds = (n) => (PIXEL ? n : 0); // extra display letter spacing, pixel style only
 
 const THEMES = PIXEL
   ? {
@@ -225,9 +225,8 @@ async function fetchData(now) {
 
 // Doto (dot-matrix display) and Geist Mono (text and labels), both SIL Open Font License, instanced
 // and subset into assets/fonts. metrics.json holds their advance widths for layout.
-const FONT_FILES = PIXEL
-  ? { display: 'doto-bold', text: 'geist-mono', label: 'geist-mono-semibold' }
-  : { display: 'geist-semibold', text: 'geist-regular', label: 'geist-mono-semibold' };
+// The chosen pairing, in both styles: Doto for display, Geist Mono for text and labels.
+const FONT_FILES = { display: 'doto-bold', text: 'geist-mono', label: 'geist-mono-semibold' };
 const fonts = {};
 let metrics;
 let icons;
@@ -297,15 +296,15 @@ function pixelShape(x, y, w, h, p, fill) {
   return `<path d="M${x + 2 * p} ${y}H${X - 2 * p}V${y + p}H${X - p}V${y + 2 * p}H${X}V${Y - 2 * p}H${X - p}V${Y - p}H${X - 2 * p}V${Y}H${x + 2 * p}V${Y - p}H${x + p}V${Y - 2 * p}H${x}V${y + 2 * p}H${x + p}V${y + p}Z" fill="${fill}"/>`;
 }
 
-function frame(W, H, t, p = PX) {
-  if (!PIXEL) return `<rect x="0.75" y="0.75" width="${W - 1.5}" height="${H - 1.5}" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>`;
+function frame(W, H, t, p = PX, sw = 1) {
+  if (!PIXEL) return `<rect x="${sw / 2}" y="${sw / 2}" width="${r1(W - sw)}" height="${r1(H - sw)}" fill="${t.bg}" stroke="${t.edge}" stroke-width="${sw}"/>`;
   const stud = (x, y) => `<rect x="${x}" y="${y}" width="${p}" height="${p}" fill="${t.brass}"/>`;
   return `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
   ${stud(2 * p, 2 * p)}${stud(W - 3 * p, 2 * p)}${stud(2 * p, H - 3 * p)}${stud(W - 3 * p, H - 3 * p)}`;
 }
 
-function dotRule(x0, x1, y, t, size = 4, gap = 6) {
-  if (!PIXEL) return `<line x1="${r1(x0)}" y1="${r1(y) + 1}" x2="${r1(x1)}" y2="${r1(y) + 1}" stroke="${t.edge}" stroke-width="1.5"/>`;
+function dotRule(x0, x1, y, t, size = 4, gap = 6, sw = 1) {
+  if (!PIXEL) return `<line x1="${r1(x0)}" y1="${r1(y + 1)}" x2="${r1(x1)}" y2="${r1(y + 1)}" stroke="${t.edge}" stroke-width="${sw}"/>`;
   let out = '';
   for (let x = x0; x <= x1 - size; x += size + gap) out += `<rect x="${r1(x)}" y="${r1(y)}" width="${size}" height="${size}" fill="${t.edge}"/>`;
   return out;
@@ -322,8 +321,9 @@ function dotColumn(x, y0, y1, t, size = 4, gap = 6) {
 function badge(x, y, size, mark, t, p = 5) {
   if (!PIXEL) {
     const f = mark.length > 1 ? size * 0.4 : size * 0.48;
-    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1.5"/>
-  ${text(mark, { font: 'display', size: r1(f), x: x + size / 2, y: y + size / 2 + f * 0.36, fill: t.accent, anchor: 'middle' })}`;
+    const font = size < 32 ? 'label' : 'display'; // Doto's dots blur below about 13px, so small badges use Geist Mono
+    return `<rect x="${x + 0.5}" y="${y + 0.5}" width="${size - 1}" height="${size - 1}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1"/>
+  ${text(mark, { font, size: r1(f), x: x + size / 2, y: y + size / 2 + f * 0.36, fill: t.accent, anchor: 'middle' })}`;
   }
   const fs = mark.length > 1 ? size * 0.42 : size * 0.52;
   return `${pixelShape(x, y, size, size, p, t.accent)}
@@ -366,36 +366,60 @@ ${body}
 `;
 }
 
+// ---------------------------------------------------------------- one scale for every card
+//
+// Every card is drawn in pixels as GitHub shows it in its 830px README column (a narrower screen scales the
+// whole page down together). So one padding and one type scale hold everywhere: every card's content sits
+// PAD in from its edges, and a line of body text is the same size in every section.
+const COL = 830;
+const PAD = 22; // inner padding of every card, the Keep panel's included
+const TYPE = {
+  heading: 22, // Doto: section titles
+  figure: 26, // Doto: the year's total
+  stat: 19, // Doto: the year's numbers, the Chronicle's years
+  title: 17, // Doto: card titles
+  body: 12.5, // Geist Mono: descriptions
+  meta: 12, // Geist Mono: everything else
+  label: 11, // Geist Mono semibold, in capitals, tracked
+};
+const TRACK = 1.3; // letter spacing of the capitals labels
+const CAP = 0.72; // cap height as a share of the font size, for placing baselines
+const LINE = 6; // the gap GitHub leaves under a row of inline images (its line box)
+const colPx = (p) => (p / 100) * COL;
+const capH = (size) => size * CAP;
+
+// The largest size, down to `min`, at which `str` fits in `maxW`.
+function fit(str, font, size, min, maxW, spacing = 0) {
+  while (size > min && layout(str, font, size, spacing).width > maxW) size -= 0.25;
+  return size;
+}
+const smallCaps = (str, o) => text(str.toUpperCase(), { font: 'label', size: TYPE.label, spacing: TRACK, ...o });
+
 // ---------------------------------------------------------------- headings
 
-// GitHub sets README text in its own font, so section titles are small images in the display face.
-// Each is sized to its words and shown at a fixed height, so it stays the same size on a phone.
-const HEADING_H = 60;
-function heading(t, label) {
-  if (!PIXEL) {
-    const w = layout(label, 'display', 34).width;
-    return svg(Math.ceil(w + 6), HEADING_H, label, fontCss('display'), `${text(label, { font: 'display', size: 34, x: 0, y: HEADING_H / 2 + 12, fill: t.ink })}`);
-  }
-  const size = 40, pad = 34;
-  const w = layout(label, 'display', size, 1).width;
-  const W = Math.ceil(pad + w + 6);
-  return svg(
-    W, HEADING_H, label, fontCss('display'),
-    `<rect x="2" y="${HEADING_H / 2 - 9}" width="14" height="14" fill="${t.accent}"/>
-  ${text(label, { font: 'display', size, spacing: 1, x: pad, y: HEADING_H / 2 + 14, fill: t.ink })}`,
-  );
+// GitHub sets README text in its own font, so section titles are small images in the display face,
+// shown at their own height so they stay the same size on a phone.
+const HEADING_H = 30;
+function heading(t, words) {
+  const size = TYPE.heading, w = layout(words, 'display', size).width;
+  return svg(r1(w + 2), HEADING_H, words, fontCss('display'), text(words, { font: 'display', size, x: 0, y: r1(HEADING_H / 2 + capH(size) / 2), fill: t.ink }));
 }
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // ---------------------------------------------------------------- the ledger band
 //
 // The contribution chart and the year's numbers sit side by side in one band, like tiles in a bento
-// grid. The chart sets the band's height; the numbers tile is drawn to the same rendered height.
+// grid, the same height.
 
 const LEVELS = ['NONE', 'FIRST_QUARTILE', 'SECOND_QUARTILE', 'THIRD_QUARTILE', 'FOURTH_QUARTILE'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const LEDGER_PCT = 63, YEAR_PCT = 35;
-const L = { cell: 11, gap: 3, pad: 26, days: 50, top: 110, foot: 62 };
+// Rows of cards side by side share one gap, drawn as a transparent margin inside each card (GitHub's word
+// spacing varies), so every row lines up with both edges of the column like the full-width rows do.
+const GAP = 1.6; // % of the column
+const LEDGER_PCT = 72, YEAR_PCT = 100 - LEDGER_PCT - GAP;
+const LEDGER_H = 206; // a quarter taller than the first chart
+const cols = (n) => (100 - (n - 1) * GAP) / n; // width of each card in a row of n
+const pct = (n) => `${Math.floor(n * 1000 + 1e-6) / 1000}%`; // floor, so a row never sums past 100% and wraps
 
 function levelColours(t, dark) {
   const ramp = dark ? [0.22, 0.42, 0.66, 1] : [0.22, 0.45, 0.72, 1];
@@ -403,61 +427,61 @@ function levelColours(t, dark) {
   return [t.plate, ...ramp.map((k) => mixHex(t.bg, t.accent, k))];
 }
 
-function ledgerSize(calendar) {
-  const step = L.cell + L.gap;
-  return { W: L.pad + L.days + calendar.weeks.length * step - L.gap + L.pad, H: L.top + 7 * step - L.gap + L.foot };
-}
-
 function ledger(t, calendar, dark) {
-  const { cell, gap, pad, days: dw, top } = L;
-  const step = cell + gap, left = pad + dw;
-  const { W, H } = ledgerSize(calendar);
+  const W = colPx(LEDGER_PCT), H = LEDGER_H, mr = colPx(GAP), ms = TYPE.meta;
+  const weeks = calendar.weeks.length;
+  const left = PAD + layout('Wed', 'text', ms).width + 10;
+  const step = (W - PAD - left) / (weeks - 0.2), cell = r1(step * 0.8), vstep = step * 1.18;
+  const gridH = 6 * vstep + cell;
+  const topY = PAD + capH(TYPE.figure), footY = H - PAD;
+  const free = footY - capH(ms) - topY - (capH(ms) + 8 + gridH);
+  const monthY = topY + free * 0.55 + capH(ms), gridY = monthY + 8;
   const colours = levelColours(t, dark);
-  let squares = '', months = '', lastMonth = -1;
+  let squares = '', months = '', lastMonth = -1, lastX = -99;
   calendar.weeks.forEach((w, i) => {
-    const x = left + i * step;
+    const x = r1(left + i * step);
     w.contributionDays.forEach((d) => {
       const day = new Date(`${d.date}T00:00:00Z`).getUTCDay();
       const lvl = Math.max(0, LEVELS.indexOf(d.contributionLevel));
-      squares += `<rect x="${x}" y="${top + day * step}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
+      squares += `<rect x="${x}" y="${r1(gridY + day * vstep)}" width="${cell}" height="${cell}" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
     });
     const m = new Date(`${w.contributionDays[0].date}T00:00:00Z`).getUTCMonth();
-    if (m !== lastMonth && i < calendar.weeks.length - 2) { months += text(SHORT_MONTHS[m], { font: 'text', size: 18, x, y: top - 12, fill: t.muted }); lastMonth = m; }
+    if (m !== lastMonth && i < weeks - 2 && x - lastX > 30) { months += text(SHORT_MONTHS[m], { font: 'text', size: ms, x, y: monthY, fill: t.muted }); lastMonth = m; lastX = x; }
   });
-  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 18, x: pad, y: top + d * step + 12, fill: t.muted })).join('');
-  const ly = top + 7 * step + 22;
-  const lx = W - pad - 5 * step - 46;
-  const legend = `${text('Less', { font: 'text', size: 18, x: lx - 8, y: ly + 11, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${lx + i * step}" y="${ly}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: 18, x: lx + 5 * step + 3, y: ly + 9, fill: t.muted })}`;
+  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: ms, x: PAD, y: gridY + d * vstep + cell / 2 + capH(ms) / 2, fill: t.muted })).join('');
+  const moreX = W - PAD - layout('More', 'text', ms).width;
+  const lx = moreX - 6 - (4 * step + cell), ly = r1(footY - capH(ms) / 2 - cell / 2);
+  const legend = `${text('Less', { font: 'text', size: ms, x: lx - 6, y: footY, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${r1(lx + i * step)}" y="${ly}" width="${cell}" height="${cell}" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: ms, x: moreX, y: footY, fill: t.muted })}`;
   const total = fmt(calendar.totalContributions);
   return svg(
-    W, H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
+    r1(W + mr), H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 5)}
-  ${text(total, { font: 'display', size: 34, spacing: ds(1), x: pad, y: 56, fill: t.ink })}
-  ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 17, spacing: 2, x: pad + layout(total, 'display', 34, ds(1)).width + 16, y: 54, fill: t.brass })}
+  ${text(total, { font: 'display', size: TYPE.figure, x: PAD, y: topY, fill: t.ink })}
+  ${smallCaps('Contributions in the last year', { x: PAD + layout(total, 'display', TYPE.figure).width + 12, y: topY, fill: t.brass })}
   ${months}${dayLabels}${squares}
-  ${text('github.com/obileonardo', { font: 'text', size: 18, x: pad, y: ly + 11, fill: t.accent })}
+  ${text('github.com/obileonardo', { font: 'text', size: ms, x: PAD, y: footY, fill: t.accent })}
   ${legend}`,
   );
 }
 
 // The year's numbers, quietly: a small label, then one line per figure.
-function yearTile(t, year, stats, calendar) {
-  const lg = ledgerSize(calendar);
-  const W = 460, H = Math.round((lg.H / lg.W) * (LEDGER_PCT / YEAR_PCT) * W);
-  const pad = 30, top = 78;
-  const rowH = (H - top - 18) / stats.length;
-  const size = Math.min(30, rowH * 0.66);
+function yearTile(t, year, stats) {
+  const W = colPx(YEAR_PCT), H = LEDGER_H, inner = W - 2 * PAD;
+  const labelY = PAD + capH(TYPE.label), top = labelY + 6;
+  const rowH = (H - PAD - top) / stats.length;
   const rows = stats.map((s, i) => {
-    const y = top + rowH * (i + 0.72);
-    const sep = i ? dotRule(pad, W - pad, r1(top + rowH * i - 2), t, 2, 8) : '';
-    return `${sep}${text(fmt(s.value), { font: 'display', size: r1(size), spacing: ds(0.5), x: pad, y: r1(y), fill: t.ink })}
-    ${text(s.label.toLowerCase(), { font: 'text', size: 18, x: W - pad, y: r1(y - 2), fill: t.muted, anchor: 'end' })}`;
+    const y = top + rowH * (i + 1);
+    const words = s.label.toLowerCase();
+    const size = fit(fmt(s.value), 'display', TYPE.stat, 13, inner - layout(words, 'text', TYPE.meta).width - 10);
+    const sep = i ? dotRule(PAD, W - PAD, r1(y - rowH / 2 - capH(size) / 2 - 1), t, 2, 8) : '';
+    return `${sep}${text(fmt(s.value), { font: 'display', size, x: PAD, y, fill: t.ink })}
+    ${text(words, { font: 'text', size: TYPE.meta, x: W - PAD, y, fill: t.muted, anchor: 'end' })}`;
   }).join('\n  ');
   const summary = stats.map((s) => `${fmt(s.value)} ${s.label.toLowerCase()}`).join(', ');
   return svg(
-    W, H, `${year} so far: ${summary}.`, fontCss('display', 'text', 'label'),
+    r1(W), H, `${year} so far: ${summary}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 5)}
-  ${text(`ANNO DOMINI ${roman(year)}`, { font: 'label', size: 16, spacing: 2, x: pad, y: 50, fill: t.brass })}
+  ${smallCaps(`Anno Domini ${roman(year)}`, { x: PAD, y: labelY, fill: t.brass })}
   ${rows}`,
   );
 }
@@ -466,64 +490,79 @@ function yearTile(t, year, stats, calendar) {
 
 function armoury(t) {
   const tools = ARMOURY.flatMap((r) => r.tools);
-  const cols = 9, cellW = 106, cellH = 116, pad = 32, top = 74;
-  const W = pad * 2 + cols * cellW, H = top + Math.ceil(tools.length / cols) * cellH + 14;
-  const cells = tools.map(([slug, label], i) => {
-    const cx = pad + cellW * ((i % cols) + 0.5), y0 = top + Math.floor(i / cols) * cellH;
+  const n = 9, W = COL, cellW = (W - 2 * PAD) / n, box = 40, ms = 11.5, lh = 14;
+  const names = tools.map(([, l]) => (layout(l, 'text', ms).width > cellW - 8 ? wrapText(l, 'text', ms, cellW - 8) : [l]));
+  const most = Math.max(...names.map((l) => l.length));
+  const headY = PAD + capH(TYPE.label), top = headY + 22;
+  const textH = 14 + capH(ms) + (most - 1) * lh; // from the bottom of an icon to the last line of its name
+  const rowH = box + textH + 22, rows = Math.ceil(tools.length / n);
+  const H = r1(top + (rows - 1) * rowH + box + textH + PAD);
+  const cells = tools.map(([slug], i) => {
+    const cx = PAD + cellW * ((i % n) + 0.5), y0 = top + Math.floor(i / n) * rowH;
     let glyph;
     if (slug.mono) {
-      glyph = text(slug.mono, { font: 'display', size: 17, x: cx, y: y0 + 32, fill: t.ink, anchor: 'middle' });
+      glyph = text(slug.mono, { font: 'display', size: 15, x: cx, y: y0 + box / 2 + capH(15) / 2, fill: t.ink, anchor: 'middle' });
     } else {
       if (!icons[slug]) throw new Error(`Missing icon in scripts/icons.json: ${slug}`);
-      glyph = `<path transform="translate(${r1(cx - 13)} ${y0 + 13}) scale(${r1(26 / 24 * 1000) / 1000})" d="${icons[slug]}" fill="${t.ink}"/>`;
+      glyph = `<path transform="translate(${r1(cx - 10)} ${y0 + 10}) scale(${r1((20 / 24) * 1000) / 1000})" d="${icons[slug]}" fill="${t.ink}"/>`;
     }
-    const caps = PIXEL ? label.toUpperCase() : label;
-    const lf = PIXEL ? 'label' : 'text', ls = PIXEL ? 1.2 : 0;
-    let size = PIXEL ? 11 : 14.5;
-    while (size > (PIXEL ? 8 : 12.5) && layout(caps, lf, size, ls).width > cellW - 6) size -= 0.5;
-    return `<g class="rise" style="animation-delay:${r1(0.05 + i * 0.03)}s">${pixelShape(cx - 26, y0, 52, 52, 4, t.edge)}${pixelShape(cx - 23, y0 + 3, 46, 46, 4, t.plate)}
-    ${glyph}
-    ${text(caps, { font: lf, size, spacing: ls, x: cx, y: y0 + 78, fill: t.ink, anchor: 'middle' })}</g>`;
+    const words = names[i].map((l, k) => text(l, { font: 'text', size: ms, x: cx, y: y0 + box + 14 + capH(ms) + k * lh, fill: t.ink, anchor: 'middle' })).join('');
+    return `<g class="rise" style="animation-delay:${r1(0.05 + i * 0.03)}s">${pixelShape(r1(cx - box / 2), y0, box, box, 4, t.edge)}${pixelShape(r1(cx - box / 2 + 1), y0 + 1, box - 2, box - 2, 4, t.plate)}
+    ${glyph}${words}</g>`;
   });
   const halls = ARMOURY.map((r) => r.kind).join(' · ');
   const title = `The Armoury. ${ARMOURY.map((r) => `${r.kind[0].toUpperCase()}${r.kind.slice(1)}: ${r.tools.map(([, l]) => l).join(', ')}`).join('. ')}.`;
   return svg(
     W, H, title, `${fontCss('display', 'text', 'label')}\n${CSS_RISE}`,
     `${frame(W, H, t)}
-  <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><rect x="9" y="9" width="2" height="2" fill="${t.edge}"/></pattern></defs>
-  <rect x="${PX * 2}" y="${PX * 2}" width="${W - PX * 4}" height="${H - PX * 4}" fill="url(#grid)" opacity=".7"/>
-  ${text('TOOLS OF THE TRADE', { font: 'label', size: 14.5, spacing: 3, x: pad, y: 48, fill: t.brass })}
-  ${text(halls, { font: 'text', size: 15, x: W - pad, y: 48, fill: t.muted, anchor: 'end' })}
+  <defs><pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse"><rect x="7.25" y="7.25" width="1.5" height="1.5" fill="${t.edge}"/></pattern></defs>
+  <rect x="1" y="1" width="${W - 2}" height="${H - 2}" fill="url(#grid)" opacity=".7"/>
+  ${smallCaps('Tools of the trade', { x: PAD, y: headY, fill: t.brass })}
+  ${text(halls, { font: 'text', size: TYPE.meta, x: W - PAD, y: headY, fill: t.muted, anchor: 'end' })}
   ${cells.join('\n  ')}`,
   );
 }
 
 // ---------------------------------------------------------------- the arsenal: small project cards
 
-function projectCard(t, p, info) {
-  const W = 320, H = 192, pad = 18, x = pad + 52;
+const BADGE = 34;
+const PROJECT_W = colPx(cols(3));
+// Every card is as tall as the one with the longest description, so the rows stay even.
+const projectLines = () => Math.max(...PROJECTS.map((p) => wrapText(p.short ?? p.what, 'text', TYPE.body, PROJECT_W - 2 * PAD).length));
+
+function projectCard(t, p, info, { right = false, below = false, lines = 2 } = {}) {
+  const W = PROJECT_W, inner = W - 2 * PAD, x = PAD + BADGE + 12, lh = 19;
+  const mr = right ? colPx(GAP) : 0, mb = below ? colPx(GAP) - LINE : 0;
   const name = caps(p.name);
-  let ns = 18;
-  while (ns > 13 && layout(name, 'display', ns, 0.5).width > W - x - pad) ns -= 0.5;
-  const desc = wrapText(p.short ?? p.what, 'text', 14.5, W - 2 * pad).slice(0, 2);
+  const ns = fit(name, 'display', TYPE.title, 13, W - PAD - x, ds(0.5));
+  const descY = PAD + BADGE + 18 + capH(TYPE.body);
+  const desc = wrapText(p.short ?? p.what, 'text', TYPE.body, inner);
+  const ruleY = descY + (lines - 1) * lh + 14;
+  const footY = ruleY + 14 + capH(TYPE.meta), H = r1(footY + PAD);
+  // The footer: what it's built with on the left; its stars and latest release, or its standing, on the right.
+  const ver = info?.latest?.tagName ?? '', stars = info?.stars ? String(info.stars) : '';
+  const rightW = (fs) => (info?.stars || info?.latest
+    ? (stars ? 10 + 5 + layout(stars, 'text', fs).width : 0) + (stars && ver ? 12 : 0) + (ver ? layout(ver, 'text', fs).width : 0)
+    : layout(p.standing ?? '', 'text', fs).width);
+  let fs = TYPE.meta;
+  while (fs > 10.5 && layout(p.built, 'text', fs).width + rightW(fs) + 16 > inner) fs -= 0.25;
   let standing;
   if (info?.stars || info?.latest) {
-    const ver = info.latest ? info.latest.tagName : '';
-    const verW = ver ? layout(ver, 'text', 14).width : 0;
-    const starX = W - pad - verW - (ver ? 12 : 0) - (info.stars ? 34 : 0);
-    standing = `${info.stars ? `${pixelStar(starX - 4, 160, 2.4, t.brass)}${text(String(info.stars), { font: 'text', size: 14, x: starX + 12, y: 172, fill: t.ink })}` : ''}${ver ? text(ver, { font: 'text', size: 14, x: W - pad, y: 172, fill: t.brass, anchor: 'end' }) : ''}`;
+    const verX = W - PAD - (ver ? layout(ver, 'text', fs).width : 0);
+    const starsX = verX - (ver && stars ? 12 : 0) - (stars ? layout(stars, 'text', fs).width : 0);
+    standing = `${stars ? `${pixelStar(r1(starsX - 15), r1(footY - capH(fs) / 2 - 5.2), 2, t.brass)}${text(stars, { font: 'text', size: fs, x: starsX, y: footY, fill: t.ink })}` : ''}${ver ? text(ver, { font: 'text', size: fs, x: W - PAD, y: footY, fill: t.brass, anchor: 'end' }) : ''}`;
   } else {
-    standing = text(p.standing ?? '', { font: 'text', size: 14, x: W - pad, y: 172, fill: t.muted, anchor: 'end' });
+    standing = text(p.standing ?? '', { font: 'text', size: fs, x: W - PAD, y: footY, fill: t.muted, anchor: 'end' });
   }
   return svg(
-    W, H, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
+    r1(W + mr), r1(H + mb), `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
-  ${badge(pad, pad, 40, p.mark ?? p.name[0], t, 4)}
-  ${text(name, { font: 'display', size: r1(ns), spacing: ds(0.5), x, y: pad + 17, fill: t.ink })}
-  ${text(`→ ${p.get.label.toUpperCase()}`, { font: 'label', size: 13, spacing: 1.4, x, y: pad + 38, fill: t.accent })}
-  ${desc.map((l, i) => text(l, { font: 'text', size: 14.5, x: pad, y: 96 + i * 21, fill: t.muted })).join('\n  ')}
-  ${dotRule(pad, W - pad, 144, t, 3, 7)}
-  ${text(p.built, { font: 'text', size: 14, x: pad, y: 172, fill: t.muted })}
+  ${badge(PAD, PAD, BADGE, p.mark ?? p.name[0], t, 4)}
+  ${text(name, { font: 'display', size: ns, spacing: ds(0.5), x, y: PAD + capH(ns), fill: t.ink })}
+  ${smallCaps(`→ ${p.get.label}`, { x, y: PAD + BADGE, fill: t.accent })}
+  ${desc.map((l, i) => text(l, { font: 'text', size: TYPE.body, x: PAD, y: descY + i * lh, fill: t.muted })).join('\n  ')}
+  ${dotRule(PAD, W - PAD, ruleY, t, 3, 7)}
+  ${text(p.built, { font: 'text', size: fs, x: PAD, y: footY, fill: t.muted })}
   ${standing}`,
   );
 }
@@ -532,33 +571,33 @@ function projectCard(t, p, info) {
 
 function timeline(t) {
   const items = [...CHRONICLE].sort((a, b) => a.since - b.since);
-  const W = 1040, pad = 34, stepX = 160, x0 = 56, textW = 296;
+  const W = COL, textW = 232, x0 = PAD + 4;
+  const stepX = (W - PAD - x0 - 12 - textW) / (items.length - 1);
+  const LH = { year: 26, role: 23, house: 18, field: 17 };
   // Each entry is a block of lines read top to bottom; the year always sits next to the line.
-  const blocks = items.map((c) => ({ c, field: wrapText(c.field, 'text', 14.5, textW).slice(0, 4) }));
-  const blockH = (b) => 30 + 24 + 22 + b.field.length * 19;
+  const blocks = items.map((c) => ({ c, field: wrapText(c.field, 'text', TYPE.meta, textW) }));
+  const blockH = (b) => LH.year + LH.role + LH.house + b.field.length * LH.field;
   const upH = Math.max(...blocks.filter((_, i) => i % 2 === 0).map(blockH));
   const downH = Math.max(...blocks.filter((_, i) => i % 2 === 1).map(blockH));
-  const lineY = pad + upH + 18, H = lineY + 18 + downH + pad;
-  const parts = [dotRule(pad, W - pad, lineY - 2, t, 4, 6)];
+  // The first line's cap sits PAD below the top; the last line's baseline sits PAD above the bottom.
+  const lineY = PAD - (LH.role - 4 - capH(TYPE.title)) + upH + 12;
+  const H = r1(lineY + 12 + downH - 4 + PAD);
+  const parts = [dotRule(PAD, W - PAD, lineY - 1, t, 4, 6)];
   blocks.forEach((b, i) => {
     const x = x0 + i * stepX, above = i % 2 === 0;
-    parts.push(`<rect x="${x - 1}" y="${lineY - 9}" width="8" height="16" fill="${i === blocks.length - 1 ? t.accent : t.brass}"/>`);
-    const lines = [
-      ['year', String(b.c.since)], ['role', caps(b.c.role)], ['house', b.c.house], ...b.field.map((f) => ['field', f]),
-    ];
+    parts.push(`<rect x="${r1(x - 1)}" y="${r1(lineY - 6)}" width="6" height="12" fill="${i === blocks.length - 1 ? t.accent : t.brass}"/>`);
+    const lines = [['year', String(b.c.since)], ['role', caps(b.c.role)], ['house', b.c.house], ...b.field.map((f) => ['field', f])];
     const order = above ? [lines[1], lines[2], ...lines.slice(3), lines[0]] : lines;
-    let y = above ? lineY - 14 - blockH(b) : lineY + 16;
+    let y = above ? lineY - 12 - blockH(b) : lineY + 12;
     for (const [kind, str] of order) {
-      const h = kind === 'year' ? 30 : kind === 'role' ? 24 : kind === 'house' ? 22 : 19;
-      y += h;
-      const base = y - (kind === 'year' ? 4 : 5);
+      y += LH[kind];
       const st = {
-        year: { font: 'display', size: 24, spacing: ds(1), fill: t.brass },
-        role: { font: 'display', size: 17, spacing: ds(0.6), fill: t.ink },
-        house: { font: 'text', size: 15, fill: b.c.url ? t.accent : t.muted },
-        field: { font: 'text', size: 14.5, fill: t.muted },
+        year: { font: 'display', size: TYPE.stat, fill: t.brass },
+        role: { font: 'display', size: TYPE.title, spacing: ds(0.6), fill: t.ink },
+        house: { font: 'text', size: TYPE.meta, fill: b.c.url ? t.accent : t.muted },
+        field: { font: 'text', size: TYPE.meta, fill: t.muted },
       }[kind];
-      parts.push(text(str, { ...st, x: x + 14, y: base }));
+      parts.push(text(str, { ...st, x: r1(x + 12), y: r1(y - 4) }));
     }
   });
   return svg(
@@ -567,22 +606,29 @@ function timeline(t) {
   );
 }
 
-// ---------------------------------------------------------------- dispatches: a compact changelog
+// ---------------------------------------------------------------- slim full-width rows
+
+// One row of a list: Latest Dispatches, and the letter in Elsewhere.
+const ROW_H = 46, ROW_BADGE = 24;
+function row(t, title, { left = '', mark, name, after = '', afterFill, right }) {
+  const W = COL, H = ROW_H, y = r1(H / 2 + capH(TYPE.meta) / 2);
+  const bx = left ? PAD + layout(left, 'text', TYPE.meta).width + 22 : PAD;
+  const nx = bx + ROW_BADGE + 12, nameW = layout(name, 'display', TYPE.title, ds(0.6)).width;
+  return svg(
+    W, H, title, fontCss('display', 'text', 'label'),
+    `${frame(W, H, t, 3)}
+  ${left ? text(left, { font: 'text', size: TYPE.meta, x: PAD, y, fill: t.muted }) : ''}
+  ${badge(r1(bx), (H - ROW_BADGE) / 2, ROW_BADGE, mark, t, 3)}
+  ${text(name, { font: 'display', size: TYPE.title, spacing: ds(0.6), x: r1(nx), y: r1(H / 2 + capH(TYPE.title) / 2), fill: t.ink })}
+  ${after ? text(after, { font: 'text', size: TYPE.meta, x: r1(nx + nameW + 12), y, fill: afterFill }) : ''}
+  ${text(right, { font: 'text', size: TYPE.meta, x: W - PAD, y, fill: t.accent, anchor: 'end' })}`,
+  );
+}
 
 function dispatchRow(t, r) {
-  const W = 1000, H = 54, p = 3;
-  const name = caps(r.project);
-  const nameW = layout(name, 'display', 17, 0.6).width;
-  const date = r.publishedAt.slice(0, 10);
-  return svg(
-    W, H, `${r.project} ${r.tagName}, released ${longDate(r.publishedAt)}.`, fontCss('display', 'text', 'label'),
-    `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
-  ${text(date, { font: 'text', size: 15, x: 24, y: 33, fill: t.muted })}
-  ${badge(148, 11, 32, r.mark ?? r.project[0], t, 3)}
-  ${text(name, { font: 'display', size: 17, spacing: ds(0.6), x: 194, y: 33, fill: t.ink })}
-  ${text(r.tagName, { font: 'text', size: 15, x: 194 + nameW + 14, y: 33, fill: t.brass })}
-  ${text('release notes →', { font: 'text', size: 15, x: W - 24, y: 33, fill: t.accent, anchor: 'end' })}`,
-  );
+  return row(t, `${r.project} ${r.tagName}, released ${longDate(r.publishedAt)}.`, {
+    left: r.publishedAt.slice(0, 10), mark: r.mark ?? r.project[0], name: caps(r.project), after: r.tagName, afterFill: t.brass, right: 'release notes →',
+  });
 }
 
 function dispatchAlt(list) {
@@ -590,20 +636,27 @@ function dispatchAlt(list) {
   return `Latest dispatches: ${list.map((r) => `${r.project} ${r.tagName}, ${longDate(r.publishedAt)}`).join('; ')}.`;
 }
 
-// ---------------------------------------------------------------- elsewhere: link cards
+// ---------------------------------------------------------------- elsewhere: link cards, then the letter
 
-function seal(t, s) {
-  const W = 220, H = 150, pad = 18;
-  let hs = 16;
-  while (hs > 12 && layout(s.handle, 'text', hs).width > W - 2 * pad) hs -= 0.5;
+const LINKS = SEALS.filter((s) => !s.row), LETTER = SEALS.find((s) => s.row);
+function seal(t, s, { right = false, below = false } = {}) {
+  const W = colPx(cols(LINKS.length)), inner = W - 2 * PAD, mark = 30;
+  const mr = right ? colPx(GAP) : 0, mb = below ? colPx(GAP) - LINE : 0;
+  const ls = fit(caps(s.label), 'display', TYPE.title, 13, inner, ds(0.6));
+  const hs = fit(s.handle, 'text', TYPE.meta, 10.5, inner);
+  const labelY = PAD + mark + 20 + capH(TYPE.title), handleY = labelY + 18, H = r1(handleY + PAD);
   return svg(
-    W, H, s.alt, fontCss('display', 'text', 'label'),
+    r1(W + mr), r1(H + mb), s.alt, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
-  ${badge(pad, pad, 34, s.mark, t, 4)}
-  ${text('→', { font: 'text', size: 22, x: W - pad, y: pad + 24, fill: t.accent, anchor: 'end' })}
-  ${text(caps(s.label), { font: 'display', size: s.label.length > 10 ? 15 : 18, spacing: ds(0.6), x: pad, y: 98, fill: t.ink })}
-  ${text(s.handle, { font: 'text', size: r1(hs), x: pad, y: 128, fill: t.muted })}`,
+  ${badge(PAD, PAD, mark, s.mark, t, 4)}
+  ${text('→', { font: 'text', size: 16, x: W - PAD, y: r1(PAD + mark / 2 + capH(16) / 2), fill: t.accent, anchor: 'end' })}
+  ${text(caps(s.label), { font: 'display', size: ls, spacing: ds(0.6), x: PAD, y: r1(labelY), fill: t.ink })}
+  ${text(s.handle, { font: 'text', size: hs, x: PAD, y: r1(handleY), fill: t.muted })}`,
   );
+}
+
+function letterRow(t, s) {
+  return row(t, s.alt, { mark: s.mark, name: caps(s.label), right: `${s.handle} →` });
 }
 
 // ---------------------------------------------------------------- markdown
@@ -615,11 +668,14 @@ function picture(base, alt, attrs = 'width="100%"') {
 const linked = (href, inner) => (href ? `<a href="${esc(href)}">${inner}</a>` : inner);
 
 function ledgerBand() {
-  return `<p>${linked('https://github.com/obileonardo?tab=repositories', picture('assets/ledger', 'Contribution chart: a year of contributions, one square per day, brighter for busier days.', `width="${LEDGER_PCT}%"`))} ${picture('assets/year', "This year's numbers: contributions, commits, pull requests, releases and stars.", `width="${YEAR_PCT}%"`)}</p>`;
+  return `<p>${linked('https://github.com/obileonardo?tab=repositories', picture('assets/ledger', 'Contribution chart: a year of contributions, one square per day, brighter for busier days.', `width="${pct(LEDGER_PCT + GAP)}"`))}${picture('assets/year', "This year's numbers: contributions, commits, pull requests, releases and stars.", `width="${pct(YEAR_PCT)}"`)}</p>`;
 }
 
 function arsenal() {
-  return `<p>\n${PROJECTS.map((p) => linked(p.get.url, picture(`assets/arsenal/${slug(p.name)}`, `${p.name}: ${p.what}`, 'width="32%"'))).join('\n')}\n</p>`;
+  const card = (p, i) => linked(p.get.url, picture(`assets/arsenal/${slug(p.name)}`, `${p.name}: ${p.what}`, `width="${pct(cols(3) + (i % 3 < 2 ? GAP : 0))}"`));
+  const rows = [];
+  for (let i = 0; i < PROJECTS.length; i += 3) rows.push(PROJECTS.slice(i, i + 3).map((p, k) => card(p, i + k)).join(''));
+  return `<p>\n${rows.join('<br>\n')}\n</p>`;
 }
 
 function chronicle() {
@@ -633,11 +689,12 @@ function dispatches(list) {
 
 function headingPicture(h) {
   const base = `assets/headings/${slug(h)}`;
-  return `<h3><picture><source media="(prefers-color-scheme: dark)" srcset="${base}-dark.svg"><img alt="${esc(h)}" src="${base}-light.svg" height="${HEADING_H / 2}"></picture></h3>`;
+  return `<h3><picture><source media="(prefers-color-scheme: dark)" srcset="${base}-dark.svg"><img alt="${esc(h)}" src="${base}-light.svg" height="${HEADING_H}"></picture></h3>`;
 }
 
 function seals() {
-  return `<p align="center">\n${SEALS.map((s) => linked(s.url, picture(`assets/seals/${s.id}`, s.alt, 'width="18.6%"'))).join('\n')}\n</p>`;
+  const cards = LINKS.map((s, i) => linked(s.url, picture(`assets/seals/${s.id}`, s.alt, `width="${pct(cols(LINKS.length) + (i < LINKS.length - 1 ? GAP : 0))}"`))).join('');
+  return `<p>\n${cards}${LETTER ? `<br>\n${linked(LETTER.url, picture(`assets/seals/${LETTER.id}`, LETTER.alt))}` : ''}\n</p>`;
 }
 
 // ---------------------------------------------------------------- main
@@ -655,19 +712,20 @@ async function main() {
 
   for (const [name, t] of Object.entries(THEMES)) {
     for (const h of HEADINGS) files.set(`assets/headings/${slug(h)}-${name}.svg`, heading(t, h));
-    if (!HOURLY) files.set(`assets/year-${name}.svg`, yearTile(t, data.year, data.stats, data.calendar));
+    if (!HOURLY) files.set(`assets/year-${name}.svg`, yearTile(t, data.year, data.stats));
     if (!HOURLY) files.set(`assets/ledger-${name}.svg`, ledger(t, data.calendar, name === 'dark'));
     data.dispatches.forEach((r, i) => files.set(`assets/dispatches/${i}-${name}.svg`, dispatchRow(t, r)));
-    for (const p of PROJECTS) files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectCard(t, p, p.repo ? data.repoInfo.get(p.repo) : null));
+    PROJECTS.forEach((p, i) => files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectCard(t, p, p.repo ? data.repoInfo.get(p.repo) : null, { right: i % 3 < 2, below: i < PROJECTS.length - 3, lines: projectLines() })));
     files.set(`assets/chronicle-${name}.svg`, timeline(t));
     files.set(`assets/armoury-${name}.svg`, armoury(t));
-    for (const s of SEALS) files.set(`assets/seals/${s.id}-${name}.svg`, seal(t, s));
+    LINKS.forEach((s, i) => files.set(`assets/seals/${s.id}-${name}.svg`, seal(t, s, { right: i < LINKS.length - 1, below: !!LETTER })));
+    if (LETTER) files.set(`assets/seals/${LETTER.id}-${name}.svg`, letterRow(t, LETTER));
   }
 
   // Hold the Keep: the board as it stands. Moves themselves are played by scripts/keep/play.mjs.
   const state = await loadState();
   files.set('game/state.json', `${JSON.stringify(state, null, 1)}\n`);
-  const keep = keepBoard(state, THEMES, { text, layout, fontCss, svg, frame, dotRule, pixelStar, wrapText, style: STYLE });
+  const keep = keepBoard(state, THEMES, { text, layout, fontCss, svg, frame, dotRule, pixelStar, wrapText, fit, TYPE, PAD, TRACK, CAP, COL, style: STYLE });
   for (const [rel, content] of keep.files) files.set(rel, content);
 
   const readme = template
