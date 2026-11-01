@@ -59,7 +59,7 @@ export async function loadState(now = new Date().toISOString()) {
 // Removes status panels that no longer describe the board. Shared with scripts/build.mjs.
 export async function prunePanels(keep) {
   for (const f of await readdir(path.join(ROOT, 'assets/keep'))) {
-    if (f.startsWith('panel-') && !keep.has(`assets/keep/${f}`)) await unlink(path.join(ROOT, 'assets/keep', f));
+    if ((f.startsWith('panel-') || f.startsWith('forgebar-')) && !keep.has(`assets/keep/${f}`)) await unlink(path.join(ROOT, 'assets/keep', f));
   }
 }
 
