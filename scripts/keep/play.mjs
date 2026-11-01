@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { newAge, play } from './rules.mjs';
-import { board, splice, REPO } from './render.mjs';
+import { board, splice, versionUrls, REPO } from './render.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const STATE = path.join(ROOT, 'game/state.json');
@@ -72,7 +72,7 @@ async function writeBoard(state, B) {
   for (const [rel, svg] of files) await writeFile(path.join(ROOT, rel), svg);
   await prunePanels(new Set(files.keys()));
   const file = path.join(ROOT, 'README.md');
-  await writeFile(file, splice(await readFile(file, 'utf8'), markdown));
+  await writeFile(file, splice(await readFile(file, 'utf8'), versionUrls(markdown, (rel) => files.get(rel) ?? null)));
 }
 
 async function openMoves() {

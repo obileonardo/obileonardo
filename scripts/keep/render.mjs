@@ -152,6 +152,61 @@ function tileFrame(w, t) {
   return CLEAN ? `<rect x="2" y="2" width="${w - 4}" height="96" rx="12" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>` : `<rect x="2" y="2" width="${w - 4}" height="96" rx="6" fill="${t.bg}"/>`;
 }
 
+// ---------------------------------------------------------------- clean tiles
+//
+// The clean style draws the same pieces as smooth shapes instead of dots: wall blocks joined to their
+// neighbours, round towers, a vector crown for the keep, soft brackets for squares you can fire at.
+
+function cleanBody(key, t) {
+  const out = [];
+  const kind = key[0];
+  const corners = (col) => {
+    const c = (x, y, dx, dy) => `M${x} ${y + dy * 13}V${y}H${x + dx * 13}`;
+    return `<path d="${c(10, 10, 1, 1)}${c(90, 10, -1, 1)}${c(10, 90, 1, -1)}${c(90, 90, -1, -1)}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  };
+  if (kind === 'e') {
+    if (key === 'e1') out.push(`<path d="M50 40V60M40 50H60" stroke="${t.muted}" stroke-width="3.5" stroke-linecap="round"/>`);
+    return out.join('');
+  }
+  if (kind === 'k') {
+    const hp = Number(key[1]);
+    out.push(`<rect x="22" y="22" width="56" height="56" rx="12" fill="${t.plate}" stroke="${t.ink}" stroke-width="3"/>`);
+    out.push(`<path d="M35 55V38L43 46L50 34L57 46L65 38V55Z" fill="${t.ink}" stroke="${t.ink}" stroke-width="2.5" stroke-linejoin="round"/>`);
+    for (let i = 0; i < KEEP_HP; i++) out.push(`<circle cx="${34 + i * 8}" cy="66" r="2.8" fill="${i < hp ? t.accent : t.faint}"/>`);
+    if (key.includes('x')) out.push(corners(t.accent));
+    return out.join('');
+  }
+  const [, hp, role, maskHex] = /^s(\d)([at]?)-([0-9a-f])/.exec(key);
+  const m = parseInt(maskHex, 16);
+  const arms = [];
+  if (m & 8) arms.push([36, 0, 28, 30]);
+  if (m & 4) arms.push([70, 36, 30, 28]);
+  if (m & 2) arms.push([36, 70, 28, 30]);
+  if (m & 1) arms.push([0, 36, 30, 28]);
+  const fill = t.muted;
+  for (const [x, y, w, h] of arms) out.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`);
+  if (role) {
+    out.push(`<circle cx="50" cy="50" r="27" fill="${fill}"/><circle cx="50" cy="50" r="27" fill="none" stroke="${t.ink}" stroke-width="3"/>`);
+    out.push(`<circle cx="50" cy="50" r="11" fill="${role === 'a' ? t.brass : t.bg}"/>`);
+  } else {
+    out.push(`<rect x="24" y="24" width="52" height="52" rx="10" fill="${fill}" stroke="${t.ink}" stroke-width="3"/>`);
+    out.push(`<path d="M27 50H73M50 27V50M38 50V73M62 50V73" stroke="${t.bg}" stroke-width="2" opacity=".55"/>`);
+  }
+  if (/g/.test(key.slice(1)) && role !== 'a') out.push(`<circle cx="78" cy="22" r="5" fill="${t.brass}"/>`);
+  if (hp === '1') out.push(`<path d="M40 30L50 45L44 54L58 64L54 72" fill="none" stroke="${t.brass}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`);
+  if (key.endsWith('x')) out.push(corners(t.accent));
+  return out.join('');
+}
+
+function cleanForge(material, lit, t) {
+  const f = lit ? t.brass : t.muted, s = t.ink;
+  return {
+    iron: `<path d="M24 66L33 40H67L76 66Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/>`,
+    ember: `<path d="M50 22C59 34 70 42 66 58C63 70 55 76 50 76C42 76 33 69 33 58C33 48 41 44 42 34C47 40 47 46 50 48C52 40 52 30 50 22Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/><path d="M50 72C46 72 43 68 44 63C45 58 49 57 50 52C54 58 57 62 56 67C55 70 52 72 50 72Z" fill="${t.brass}"/>`,
+    rune: `<path d="M50 20L77 50L50 80L23 50Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/><path d="M50 34V66M50 44L59 37M50 54L41 47" stroke="${t.bg}" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+  }[material];
+}
+
 function tileSvg(cells, t) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">${tileFrame(100, t)}${dots(t, cells)}</svg>\n`;
 }
@@ -229,7 +284,7 @@ function panelSvg(s, t, type) {
   y += 16;
   for (const [key, words] of [['e1', 'Open ground: click to build'], ['s2-0x', 'Blue corners: click to fire'], ['s2a-f', 'Brass core: a tower with a weapon'],
     ['s1-0', 'Brass crack: one more hit breaks it'], ['k5', 'The keep: when it falls, a new age']]) {
-    parts.push(`<g transform="translate(${pad} ${y}) scale(0.3)"><rect width="100" height="100" rx="10" fill="${t.plate}"/>${dots(t, tileCells(key))}</g>`);
+    parts.push(`<g transform="translate(${pad} ${y}) scale(0.3)"><rect width="100" height="100" rx="${CLEAN ? 18 : 10}" fill="${t.plate}"/>${CLEAN ? cleanBody(key, t) : dots(t, tileCells(key))}</g>`);
     parts.push(body(words, pad + 44, y + 21, t.ink, 'start', 15));
     y += 38;
   }
@@ -269,10 +324,11 @@ export function board(s, themes, type) {
   const cells = describe(s);
   const keys = new Set(cells.map((d) => d.key));
   for (const [theme, t] of Object.entries(themes)) {
-    for (const key of keys) files.set(`assets/keep/${key}-${theme}.svg`, tileSvg(tileCells(key), t));
+    const tile = (body) => `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">${tileFrame(100, t)}${body}</svg>\n`;
+    for (const key of keys) files.set(`assets/keep/${key}-${theme}.svg`, CLEAN ? tile(cleanBody(key, t)) : tileSvg(tileCells(key), t));
     for (const m of MATERIALS) {
-      files.set(`assets/keep/forge-${m}-${theme}.svg`, tileSvg(FORGE[m], t));
-      files.set(`assets/keep/forge-${m}-lit-${theme}.svg`, tileSvg(FORGE[m].map((r) => r.map((c) => (c === 'i' ? 'b' : c))), t));
+      files.set(`assets/keep/forge-${m}-${theme}.svg`, CLEAN ? tile(cleanForge(m, false, t)) : tileSvg(FORGE[m], t));
+      files.set(`assets/keep/forge-${m}-lit-${theme}.svg`, CLEAN ? tile(cleanForge(m, true, t)) : tileSvg(FORGE[m].map((r) => r.map((c) => (c === 'i' ? 'b' : c))), t));
     }
   }
   const bars = Object.fromEntries(Object.entries(themes).map(([theme, t]) => [theme, forgeBarSvg(s, t, type)]));
@@ -307,6 +363,15 @@ ${picture(bar, `The forge. ${s.bellows.length ? `In the bellows: ${s.bellows.joi
 <br clear="right">
 <!-- keep:end -->`;
   return { files, markdown };
+}
+
+/** Adds ?v=<hash of the file> to every asset URL, so a changed image is a new URL GitHub hasn't cached.
+ *  `contentOf(path)` returns the file's content (string or Buffer), or null to leave the URL alone. */
+export function versionUrls(md, contentOf) {
+  return md.replace(/(assets\/[A-Za-z0-9_.\/-]+\.(?:svg|webp|png))(?:\?v=[0-9a-f]+)?"/g, (whole, rel) => {
+    const c = contentOf(rel);
+    return c == null ? whole : `${rel}?v=${shortHash(typeof c === 'string' ? c : c.toString('latin1'))}"`;
+  });
 }
 
 export function splice(readme, fragment) {
