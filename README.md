@@ -11,7 +11,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-ledger-dark.df42cfcf.svg"><img alt="The Ledger" src="assets/headings/the-ledger-light.e4e4dfe7.svg" height="30"></picture></h3>
 
-<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.ca8325bc.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.4520e6c1.svg" width="63%"></picture></a> <picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.58955e0a.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.49acd14f.svg" width="35%"></picture></p>
+<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.c4dfc96c.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.7461a47d.svg" width="63%"></picture></a> <picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.203bc94e.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.8dea0495.svg" width="35%"></picture></p>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-arsenal-dark.d4ff8616.svg"><img alt="The Arsenal" src="assets/headings/the-arsenal-light.14fb044e.svg" height="30"></picture></h3>
 
