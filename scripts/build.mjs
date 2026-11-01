@@ -11,8 +11,8 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadState, prunePanels } from './keep/play.mjs';
-import { board as keepBoard, versionUrls } from './keep/render.mjs';
+import { loadState, pruneUnused } from './keep/play.mjs';
+import { board as keepBoard, hashNames } from './keep/render.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -292,13 +292,13 @@ const longDate = (iso) => { const d = new Date(iso); return `${d.getUTCDate()} $
 const PX = 6;
 
 function pixelShape(x, y, w, h, p, fill) {
-  if (!PIXEL) return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(14, Math.max(6, p * 2.2))}" fill="${fill}"/>`;
+  if (!PIXEL) return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`;
   const X = x + w, Y = y + h;
   return `<path d="M${x + 2 * p} ${y}H${X - 2 * p}V${y + p}H${X - p}V${y + 2 * p}H${X}V${Y - 2 * p}H${X - p}V${Y - p}H${X - 2 * p}V${Y}H${x + 2 * p}V${Y - p}H${x + p}V${Y - 2 * p}H${x}V${y + 2 * p}H${x + p}V${y + p}Z" fill="${fill}"/>`;
 }
 
 function frame(W, H, t, p = PX) {
-  if (!PIXEL) return `<rect x="0.75" y="0.75" width="${W - 1.5}" height="${H - 1.5}" rx="16" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>`;
+  if (!PIXEL) return `<rect x="0.75" y="0.75" width="${W - 1.5}" height="${H - 1.5}" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>`;
   const stud = (x, y) => `<rect x="${x}" y="${y}" width="${p}" height="${p}" fill="${t.brass}"/>`;
   return `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
   ${stud(2 * p, 2 * p)}${stud(W - 3 * p, 2 * p)}${stud(2 * p, H - 3 * p)}${stud(W - 3 * p, H - 3 * p)}`;
@@ -322,7 +322,7 @@ function dotColumn(x, y0, y1, t, size = 4, gap = 6) {
 function badge(x, y, size, mark, t, p = 5) {
   if (!PIXEL) {
     const f = mark.length > 1 ? size * 0.4 : size * 0.48;
-    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${r1(size * 0.26)}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1.5"/>
+    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1.5"/>
   ${text(mark, { font: 'display', size: r1(f), x: x + size / 2, y: y + size / 2 + f * 0.36, fill: t.accent, anchor: 'middle' })}`;
   }
   const fs = mark.length > 1 ? size * 0.42 : size * 0.52;
@@ -395,7 +395,7 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g
 const LEVELS = ['NONE', 'FIRST_QUARTILE', 'SECOND_QUARTILE', 'THIRD_QUARTILE', 'FOURTH_QUARTILE'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const LEDGER_PCT = 63, YEAR_PCT = 35;
-const L = { cell: 11, gap: 3, pad: 26, days: 34, top: 92, foot: 46 };
+const L = { cell: 11, gap: 3, pad: 26, days: 50, top: 110, foot: 62 };
 
 function levelColours(t, dark) {
   const ramp = dark ? [0.22, 0.42, 0.66, 1] : [0.22, 0.45, 0.72, 1];
@@ -419,23 +419,23 @@ function ledger(t, calendar, dark) {
     w.contributionDays.forEach((d) => {
       const day = new Date(`${d.date}T00:00:00Z`).getUTCDay();
       const lvl = Math.max(0, LEVELS.indexOf(d.contributionLevel));
-      squares += `<rect x="${x}" y="${top + day * step}" width="${cell}" height="${cell}" rx="1.5" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
+      squares += `<rect x="${x}" y="${top + day * step}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
     });
     const m = new Date(`${w.contributionDays[0].date}T00:00:00Z`).getUTCMonth();
-    if (m !== lastMonth && i < calendar.weeks.length - 2) { months += text(SHORT_MONTHS[m], { font: 'text', size: 12, x, y: top - 9, fill: t.muted }); lastMonth = m; }
+    if (m !== lastMonth && i < calendar.weeks.length - 2) { months += text(SHORT_MONTHS[m], { font: 'text', size: 18, x, y: top - 12, fill: t.muted }); lastMonth = m; }
   });
-  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 11, x: pad, y: top + d * step + 9, fill: t.muted })).join('');
-  const ly = top + 7 * step + 16;
-  const lx = W - pad - 5 * step - 34;
-  const legend = `${text('Less', { font: 'text', size: 11, x: lx - 6, y: ly + 9, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${lx + i * step}" y="${ly}" width="${cell}" height="${cell}" rx="1.5" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: 11, x: lx + 5 * step + 3, y: ly + 9, fill: t.muted })}`;
+  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 18, x: pad, y: top + d * step + 12, fill: t.muted })).join('');
+  const ly = top + 7 * step + 22;
+  const lx = W - pad - 5 * step - 46;
+  const legend = `${text('Less', { font: 'text', size: 18, x: lx - 8, y: ly + 11, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${lx + i * step}" y="${ly}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: 18, x: lx + 5 * step + 3, y: ly + 9, fill: t.muted })}`;
   const total = fmt(calendar.totalContributions);
   return svg(
     W, H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 5)}
-  ${text(total, { font: 'display', size: 30, spacing: ds(1), x: pad, y: 52, fill: t.ink })}
-  ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 11.5, spacing: 2, x: pad + layout(total, 'display', 30, 1).width + 14, y: 50, fill: t.brass })}
+  ${text(total, { font: 'display', size: 34, spacing: ds(1), x: pad, y: 56, fill: t.ink })}
+  ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 17, spacing: 2, x: pad + layout(total, 'display', 34, ds(1)).width + 16, y: 54, fill: t.brass })}
   ${months}${dayLabels}${squares}
-  ${text('github.com/obileonardo', { font: 'text', size: 11, x: pad, y: ly + 9, fill: t.accent })}
+  ${text('github.com/obileonardo', { font: 'text', size: 18, x: pad, y: ly + 11, fill: t.accent })}
   ${legend}`,
   );
 }
@@ -444,20 +444,20 @@ function ledger(t, calendar, dark) {
 function yearTile(t, year, stats, calendar) {
   const lg = ledgerSize(calendar);
   const W = 460, H = Math.round((lg.H / lg.W) * (LEDGER_PCT / YEAR_PCT) * W);
-  const pad = 28, top = 70;
+  const pad = 30, top = 78;
   const rowH = (H - top - 18) / stats.length;
-  const size = Math.min(24, rowH * 0.72);
+  const size = Math.min(30, rowH * 0.66);
   const rows = stats.map((s, i) => {
     const y = top + rowH * (i + 0.72);
     const sep = i ? dotRule(pad, W - pad, r1(top + rowH * i - 2), t, 2, 8) : '';
     return `${sep}${text(fmt(s.value), { font: 'display', size: r1(size), spacing: ds(0.5), x: pad, y: r1(y), fill: t.ink })}
-    ${text(s.label.toLowerCase(), { font: 'text', size: 13, x: W - pad, y: r1(y - 2), fill: t.muted, anchor: 'end' })}`;
+    ${text(s.label.toLowerCase(), { font: 'text', size: 18, x: W - pad, y: r1(y - 2), fill: t.muted, anchor: 'end' })}`;
   }).join('\n  ');
   const summary = stats.map((s) => `${fmt(s.value)} ${s.label.toLowerCase()}`).join(', ');
   return svg(
     W, H, `${year} so far: ${summary}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 5)}
-  ${text(`ANNO DOMINI ${roman(year)}`, { font: 'label', size: 11.5, spacing: 2, x: pad, y: 44, fill: t.brass })}
+  ${text(`ANNO DOMINI ${roman(year)}`, { font: 'label', size: 16, spacing: 2, x: pad, y: 50, fill: t.brass })}
   ${rows}`,
   );
 }
@@ -477,12 +477,13 @@ function armoury(t) {
       if (!icons[slug]) throw new Error(`Missing icon in scripts/icons.json: ${slug}`);
       glyph = `<path transform="translate(${r1(cx - 13)} ${y0 + 13}) scale(${r1(26 / 24 * 1000) / 1000})" d="${icons[slug]}" fill="${t.ink}"/>`;
     }
-    const caps = label.toUpperCase();
-    let size = 11;
-    while (size > 8 && layout(caps, 'label', size, 1.2).width > cellW - 10) size -= 0.5;
+    const caps = PIXEL ? label.toUpperCase() : label;
+    const lf = PIXEL ? 'label' : 'text', ls = PIXEL ? 1.2 : 0;
+    let size = PIXEL ? 11 : 14.5;
+    while (size > (PIXEL ? 8 : 12.5) && layout(caps, lf, size, ls).width > cellW - 6) size -= 0.5;
     return `<g class="rise" style="animation-delay:${r1(0.05 + i * 0.03)}s">${pixelShape(cx - 26, y0, 52, 52, 4, t.edge)}${pixelShape(cx - 23, y0 + 3, 46, 46, 4, t.plate)}
     ${glyph}
-    ${text(caps, { font: 'label', size, spacing: 1.2, x: cx, y: y0 + 76, fill: t.ink, anchor: 'middle' })}</g>`;
+    ${text(caps, { font: lf, size, spacing: ls, x: cx, y: y0 + 78, fill: t.ink, anchor: 'middle' })}</g>`;
   });
   const halls = ARMOURY.map((r) => r.kind).join(' · ');
   const title = `The Armoury. ${ARMOURY.map((r) => `${r.kind[0].toUpperCase()}${r.kind.slice(1)}: ${r.tools.map(([, l]) => l).join(', ')}`).join('. ')}.`;
@@ -491,8 +492,8 @@ function armoury(t) {
     `${frame(W, H, t)}
   <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><rect x="9" y="9" width="2" height="2" fill="${t.edge}"/></pattern></defs>
   <rect x="${PX * 2}" y="${PX * 2}" width="${W - PX * 4}" height="${H - PX * 4}" fill="url(#grid)" opacity=".7"/>
-  ${text('TOOLS OF THE TRADE', { font: 'label', size: 13, spacing: 3, x: pad, y: 48, fill: t.brass })}
-  ${text(halls, { font: 'text', size: 14, x: W - pad, y: 48, fill: t.muted, anchor: 'end' })}
+  ${text('TOOLS OF THE TRADE', { font: 'label', size: 14.5, spacing: 3, x: pad, y: 48, fill: t.brass })}
+  ${text(halls, { font: 'text', size: 15, x: W - pad, y: 48, fill: t.muted, anchor: 'end' })}
   ${cells.join('\n  ')}`,
   );
 }
@@ -500,29 +501,29 @@ function armoury(t) {
 // ---------------------------------------------------------------- the arsenal: small project cards
 
 function projectCard(t, p, info) {
-  const W = 320, H = 176, pad = 18, x = pad + 52;
+  const W = 320, H = 192, pad = 18, x = pad + 52;
   const name = caps(p.name);
   let ns = 18;
   while (ns > 13 && layout(name, 'display', ns, 0.5).width > W - x - pad) ns -= 0.5;
-  const desc = wrapText(p.short ?? p.what, 'text', 13, W - 2 * pad).slice(0, 2);
+  const desc = wrapText(p.short ?? p.what, 'text', 14.5, W - 2 * pad).slice(0, 2);
   let standing;
   if (info?.stars || info?.latest) {
     const ver = info.latest ? info.latest.tagName : '';
-    const verW = ver ? layout(ver, 'text', 12).width : 0;
+    const verW = ver ? layout(ver, 'text', 14).width : 0;
     const starX = W - pad - verW - (ver ? 12 : 0) - (info.stars ? 34 : 0);
-    standing = `${info.stars ? `${pixelStar(starX, 147, 2, t.brass)}${text(String(info.stars), { font: 'text', size: 12, x: starX + 14, y: 157, fill: t.ink })}` : ''}${ver ? text(ver, { font: 'text', size: 12, x: W - pad, y: 157, fill: t.brass, anchor: 'end' }) : ''}`;
+    standing = `${info.stars ? `${pixelStar(starX - 4, 160, 2.4, t.brass)}${text(String(info.stars), { font: 'text', size: 14, x: starX + 12, y: 172, fill: t.ink })}` : ''}${ver ? text(ver, { font: 'text', size: 14, x: W - pad, y: 172, fill: t.brass, anchor: 'end' }) : ''}`;
   } else {
-    standing = text(p.standing ?? '', { font: 'text', size: 12, x: W - pad, y: 157, fill: t.muted, anchor: 'end' });
+    standing = text(p.standing ?? '', { font: 'text', size: 14, x: W - pad, y: 172, fill: t.muted, anchor: 'end' });
   }
   return svg(
     W, H, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
   ${badge(pad, pad, 40, p.mark ?? p.name[0], t, 4)}
   ${text(name, { font: 'display', size: r1(ns), spacing: ds(0.5), x, y: pad + 17, fill: t.ink })}
-  ${text(`→ ${p.get.label.toUpperCase()}`, { font: 'label', size: 10.5, spacing: 1.4, x, y: pad + 36, fill: t.accent })}
-  ${desc.map((l, i) => text(l, { font: 'text', size: 13, x: pad, y: 90 + i * 18, fill: t.muted })).join('\n  ')}
-  ${dotRule(pad, W - pad, 132, t, 3, 7)}
-  ${text(p.built, { font: 'text', size: 12, x: pad, y: 157, fill: t.muted })}
+  ${text(`→ ${p.get.label.toUpperCase()}`, { font: 'label', size: 13, spacing: 1.4, x, y: pad + 38, fill: t.accent })}
+  ${desc.map((l, i) => text(l, { font: 'text', size: 14.5, x: pad, y: 96 + i * 21, fill: t.muted })).join('\n  ')}
+  ${dotRule(pad, W - pad, 144, t, 3, 7)}
+  ${text(p.built, { font: 'text', size: 14, x: pad, y: 172, fill: t.muted })}
   ${standing}`,
   );
 }
@@ -533,8 +534,8 @@ function timeline(t) {
   const items = [...CHRONICLE].sort((a, b) => a.since - b.since);
   const W = 1040, pad = 34, stepX = 160, x0 = 56, textW = 296;
   // Each entry is a block of lines read top to bottom; the year always sits next to the line.
-  const blocks = items.map((c) => ({ c, field: wrapText(c.field, 'text', 12.5, textW).slice(0, 3) }));
-  const blockH = (b) => 28 + 22 + 20 + b.field.length * 17;
+  const blocks = items.map((c) => ({ c, field: wrapText(c.field, 'text', 14.5, textW).slice(0, 4) }));
+  const blockH = (b) => 30 + 24 + 22 + b.field.length * 19;
   const upH = Math.max(...blocks.filter((_, i) => i % 2 === 0).map(blockH));
   const downH = Math.max(...blocks.filter((_, i) => i % 2 === 1).map(blockH));
   const lineY = pad + upH + 18, H = lineY + 18 + downH + pad;
@@ -548,14 +549,14 @@ function timeline(t) {
     const order = above ? [lines[1], lines[2], ...lines.slice(3), lines[0]] : lines;
     let y = above ? lineY - 14 - blockH(b) : lineY + 16;
     for (const [kind, str] of order) {
-      const h = kind === 'year' ? 28 : kind === 'role' ? 22 : kind === 'house' ? 20 : 17;
+      const h = kind === 'year' ? 30 : kind === 'role' ? 24 : kind === 'house' ? 22 : 19;
       y += h;
       const base = y - (kind === 'year' ? 4 : 5);
       const st = {
         year: { font: 'display', size: 24, spacing: ds(1), fill: t.brass },
-        role: { font: 'display', size: 15, spacing: ds(0.6), fill: t.ink },
-        house: { font: 'text', size: 13, fill: b.c.url ? t.accent : t.muted },
-        field: { font: 'text', size: 12.5, fill: t.muted },
+        role: { font: 'display', size: 17, spacing: ds(0.6), fill: t.ink },
+        house: { font: 'text', size: 15, fill: b.c.url ? t.accent : t.muted },
+        field: { font: 'text', size: 14.5, fill: t.muted },
       }[kind];
       parts.push(text(str, { ...st, x: x + 14, y: base }));
     }
@@ -577,10 +578,10 @@ function dispatchRow(t, r) {
     W, H, `${r.project} ${r.tagName}, released ${longDate(r.publishedAt)}.`, fontCss('display', 'text', 'label'),
     `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
   ${text(date, { font: 'text', size: 15, x: 24, y: 33, fill: t.muted })}
-  ${badge(150, 12, 30, r.mark ?? r.project[0], t, 3)}
+  ${badge(148, 11, 32, r.mark ?? r.project[0], t, 3)}
   ${text(name, { font: 'display', size: 17, spacing: ds(0.6), x: 194, y: 33, fill: t.ink })}
   ${text(r.tagName, { font: 'text', size: 15, x: 194 + nameW + 14, y: 33, fill: t.brass })}
-  ${text('release notes →', { font: 'text', size: 13, x: W - 24, y: 32, fill: t.accent, anchor: 'end' })}`,
+  ${text('release notes →', { font: 'text', size: 15, x: W - 24, y: 33, fill: t.accent, anchor: 'end' })}`,
   );
 }
 
@@ -593,15 +594,15 @@ function dispatchAlt(list) {
 
 function seal(t, s) {
   const W = 220, H = 150, pad = 18;
-  let hs = 13;
-  while (hs > 9 && layout(s.handle, 'text', hs).width > W - 2 * pad) hs -= 0.5;
+  let hs = 16;
+  while (hs > 12 && layout(s.handle, 'text', hs).width > W - 2 * pad) hs -= 0.5;
   return svg(
     W, H, s.alt, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
   ${badge(pad, pad, 34, s.mark, t, 4)}
   ${text('→', { font: 'text', size: 22, x: W - pad, y: pad + 24, fill: t.accent, anchor: 'end' })}
   ${text(caps(s.label), { font: 'display', size: s.label.length > 10 ? 15 : 18, spacing: ds(0.6), x: pad, y: 98, fill: t.ink })}
-  ${text(s.handle, { font: 'text', size: r1(hs), x: pad, y: 124, fill: t.muted })}`,
+  ${text(s.handle, { font: 'text', size: r1(hs), x: pad, y: 128, fill: t.muted })}`,
   );
 }
 
@@ -679,14 +680,24 @@ async function main() {
     .replace('{{KEEP}}', () => keep.markdown);
   const leftover = readme.match(/\{\{[A-Z_]+\}\}/);
   if (leftover) throw new Error(`Unfilled placeholder in README.template.md: ${leftover[0]}`);
-  const fromDisk = (rel) => (existsSync(path.join(ROOT, rel)) ? readFileSync(path.join(ROOT, rel)) : null);
-  const versioned = versionUrls(readme, (rel) => files.get(rel) ?? fromDisk(rel));
-  files.set('README.md', `<!-- Generated by scripts/build.mjs from README.template.md. Edit the template, not this file. -->\n\n${versioned}`);
+  // Content-hashed file names, so GitHub's image cache can never mix old and new versions.
+  const svgs = new Map([...files].filter(([rel]) => rel.endsWith('.svg')));
+  const hashed = hashNames(svgs, readme);
+  for (const rel of svgs.keys()) files.delete(rel);
+  for (const [rel, content] of hashed.files) files.set(rel, content);
+  // Cards this run skipped (the hourly run leaves the year's numbers alone) keep the names they have now.
+  const current = existsSync(path.join(ROOT, 'README.md')) ? readFileSync(path.join(ROOT, 'README.md'), 'utf8') : '';
+  const final = hashed.md.replace(/assets\/([A-Za-z0-9_\/-]+?)\.svg/g, (p, base) => {
+    if (/\.[0-9a-f]{8}$/.test(base)) return p;
+    const prev = current.match(new RegExp(`assets/${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.[0-9a-f]{8}\\.svg`));
+    return prev ? prev[0] : p;
+  });
+  files.set('README.md', `<!-- Generated by scripts/build.mjs from README.template.md. Edit the template, not this file. -->\n\n${final}`);
 
   // Write only after everything built, so a failed fetch never leaves half-updated files.
   for (const dir of ['assets/seals', 'assets/keep', 'assets/headings', 'assets/arsenal', 'assets/chronicle', 'assets/dispatches', 'game']) await mkdir(path.join(ROOT, dir), { recursive: true });
   for (const [rel, content] of files) await writeFile(path.join(ROOT, rel), content);
-  await prunePanels(new Set(files.keys()));
+  await pruneUnused(final, ['assets', 'assets/seals', 'assets/keep', 'assets/headings', 'assets/arsenal', 'assets/chronicle', 'assets/dispatches']);
   console.log(`Built ${files.size} files. ${data.stats.map((s) => `${s.label}: ${s.value}`).join(', ')}`);
 }
 
