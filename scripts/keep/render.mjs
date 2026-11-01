@@ -9,7 +9,8 @@
 import { squares, neighbours, exposed, towers, mounts, buildable, COLS, KEEP_HP, CHARGES, MATERIALS, ordinal, countStones, duration } from './rules.mjs';
 
 export const REPO = 'obileonardo/obileonardo';
-const TILE_WIDTH = '10%';
+const TILE_WIDTH = '8%'; // seven across beside the panel; tiles carry their own gutter, so no spaces between them
+const PANEL_WIDTH = '41%'; // floats to the right of the board
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -135,80 +136,107 @@ const FORGE = {
   rune: pattern(['....ii....', '...iiii...', '..ii..ii..', '.ii.bb.ii.', '.ii.bb.ii.', '..ii..ii..', '...iiii...', '....ii....', '..........', '..........']),
 };
 
+// The forge's label tile: as wide as four tiles, so the forge row spans the board exactly.
+function forgeBarSvg(s, t, type) {
+  const { text } = type;
+  const bellows = s.bellows.length ? `In the bellows: ${s.bellows.join(' + ')}` : 'The bellows are cold';
+  const left = 3 - s.bellows.length;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100" viewBox="0 0 400 100" role="img" aria-label="The forge. ${bellows}."><style>${type.fontCss('display', 'text', 'label')}</style>${tileFrame(400, t)}
+  ${text('THE FORGE', { font: 'label', size: 13, spacing: 2.4, x: 22, y: 36, fill: t.brass })}
+  ${text(bellows, { font: 'text', size: 17, x: 22, y: 61, fill: t.ink })}
+  ${text(`${left} more ${left === 1 ? 'material forges' : 'materials forge'} a weapon →`, { font: 'text', size: 13, x: 22, y: 82, fill: t.muted })}</svg>\n`;
+}
+
+function tileFrame(w, t) {
+  return `<rect x="2" y="2" width="${w - 4}" height="96" rx="6" fill="${t.bg}"/>`;
+}
+
 function tileSvg(cells, t) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" rx="6" fill="${t.bg}"/>${dots(t, cells)}</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="6" fill="${t.bg}"/>${dots(t, cells)}</svg>\n`;
 }
 
 // ---------------------------------------------------------------- the status panel
 
+// A tall scoreboard that sits beside the board: the age, the walls, recent deeds and a numbered
+// ranking of everyone who has played. It is at least as tall as the board it stands next to.
+// The panel is drawn exactly as tall as the board beside it: seven rows of tiles plus the forge row,
+// each 8% of the column, with about 0.5% of inline gap between rows, against a 41% wide panel.
+const PANEL_W = 500, PANEL_H = Math.round(PANEL_W * (8 * 8 + 7 * 0.7) / 41);
+
 function panelSvg(s, t, type) {
-  const { text, fontCss, svg, frame, dotRule, wrapText } = type;
-  const W = 1000, pad = 40, col = 236;
+  const { text, fontCss, svg, frame, dotRule, wrapText, layout } = type;
+  const W = PANEL_W, pad = 32, inner = W - 2 * pad;
   const keep = s.cells.D4;
   const { armed } = mounts(s);
   const mounted = [...armed].map(([sq, i]) => `${s.weapons[i].name} at ${sq} (${s.weapons[i].charges}/${CHARGES})`);
   const waiting = s.weapons.length - armed.size;
   const walls = [...mounted, waiting ? `${waiting} waiting for a tower` : ''].filter(Boolean).join(' · ') || 'none yet';
   const bellows = s.bellows.length ? s.bellows.join(' + ') : 'cold';
-  const label = (str, x, y, fill = t.muted, anchor = 'start') => text(str.toUpperCase(), { font: 'label', size: 14, spacing: 2.2, x, y, fill, anchor });
-  const body = (str, x, y, fill = t.ink, anchor = 'start') => text(str, { font: 'text', size: 19, x, y, fill, anchor });
-
-  // Rows from the top; each section adds its height.
+  const label = (str, x, y, fill = t.muted, anchor = 'start') => text(str.toUpperCase(), { font: 'label', size: 12.5, spacing: 2, x, y, fill, anchor });
+  const body = (str, x, y, fill = t.ink, anchor = 'start', size = 16) => text(str, { font: 'text', size, x, y, fill, anchor });
   const parts = [];
-  let y = 70;
-  parts.push(text(`THE ${ordinal(s.age).toUpperCase()} AGE`, { font: 'display', size: 42, spacing: 1, x: pad, y, fill: t.ink }));
-  parts.push(label(`since ${day(s.startedAt)}`, W - pad, y - 6, t.brass, 'end'));
-  y += 18;
-  parts.push(dotRule(pad, W - pad, y, t));
-  y += 38;
-  const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + col + i * 22}" y="${y - 15}" width="15" height="15" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
-  parts.push(label('Keep', pad, y), pips, label('Stones', pad + 400, y), body(String(countStones(s)), pad + 510, y + 1), label('Bellows', pad + 590, y), body(bellows, pad + 720, y + 1));
+  let y = 58;
+  parts.push(text(`THE ${ordinal(s.age).toUpperCase()} AGE`, { font: 'display', size: 32, spacing: 1, x: pad, y, fill: t.ink }));
+  y += 26; parts.push(label(`since ${day(s.startedAt)}`, pad, y, t.brass));
+  y += 18; parts.push(dotRule(pad, W - pad, y, t));
   y += 36;
-  const wallLines = wrapText(walls, 'text', 19, W - pad * 2 - col);
-  parts.push(label('On the walls', pad, y));
-  wallLines.forEach((l, i) => parts.push(body(l, pad + col, y + 1 + i * 26, walls === 'none yet' ? t.muted : t.ink)));
-  y += 26 * wallLines.length + 12;
+  const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + 120 + i * 22}" y="${y - 14}" width="15" height="15" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
+  parts.push(label('Keep', pad, y), pips, label('Stones', pad + 270, y), body(String(countStones(s)), W - pad, y + 1, t.ink, 'end'));
+  y += 32; parts.push(label('On the walls', pad, y));
+  const wl = wrapText(walls, 'text', 15, inner);
+  wl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * 22, walls === 'none yet' ? t.muted : t.ink, 'start', 15)));
+  y += 26 + 22 * wl.length;
   parts.push(dotRule(pad, W - pad, y, t));
-  y += 36;
-  parts.push(label('Recent deeds', pad, y));
-  const deeds = s.deeds.slice(0, 3);
-  if (!deeds.length) parts.push(body('No deeds yet. Lay the first stone.', pad + col, y + 1, t.muted));
-  deeds.forEach((d, i) => {
-    parts.push(body(`@${d.user}`, pad + col, y + 1 + i * 26, t.accent));
-    parts.push(body(d.deed, pad + col + text_width(`@${d.user} `), y + 1 + i * 26, t.ink));
-  });
-  y += 26 * Math.max(1, deeds.length) + 12;
-  parts.push(dotRule(pad, W - pad, y, t));
-  y += 36;
-  // The rolls, three columns, always on show.
-  const cw = (W - pad * 2) / 3;
-  [['built', 'Builders'], ['forged', 'Smiths'], ['fired', 'Raiders']].forEach(([field, name], c) => {
-    const x = pad + c * cw;
-    parts.push(label(name, x, y, t.brass));
-    const top = Object.entries(s.players).filter(([, pl]) => pl[field] > 0).sort((a, b) => b[1][field] - a[1][field] || a[0].localeCompare(b[0])).slice(0, 3);
-    if (!top.length) parts.push(body('—', x, y + 29, t.muted));
-    top.forEach(([u, pl], i) => {
-      parts.push(body(`@${u}`, x, y + 29 + i * 26, t.ink));
-      parts.push(body(String(pl[field]), x + cw - 24, y + 29 + i * 26, t.muted, 'end'));
+  y += 34; parts.push(label('Recent deeds', pad, y));
+  const deeds = s.deeds.slice(0, 4);
+  y += 26;
+  if (!deeds.length) { parts.push(body('No deeds yet. Lay the first stone.', pad, y, t.muted, 'start', 15)); y += 22; }
+  for (const d of deeds) {
+    const lines = wrapText(`@${d.user} ${d.deed}`, 'text', 15, inner);
+    lines.forEach((l, i) => {
+      if (i === 0) {
+        const at = `@${d.user}`;
+        parts.push(body(at, pad, y, t.accent, 'start', 15));
+        parts.push(body(l.slice(at.length).trimStart(), pad + layout(`${at} `, 'text', 15).width, y, t.ink, 'start', 15));
+      } else parts.push(body(l, pad, y, t.ink, 'start', 15));
+      y += 22;
     });
+  }
+  y += 4; parts.push(dotRule(pad, W - pad, y, t));
+  // The ranking: everyone by moves made, with what they did.
+  y += 34; parts.push(label('Ranking', pad, y, t.brass), label('built · forged · fired', W - pad, y, t.muted, 'end'));
+  const ranked = Object.entries(s.players).map(([u, pl]) => [u, pl, pl.built + pl.forged + pl.fired]).filter(([, , n]) => n > 0)
+    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0])).slice(0, 6);
+  y += 30;
+  if (!ranked.length) { parts.push(body('No one yet. Be the first.', pad, y, t.muted, 'start', 15)); y += 26; }
+  ranked.forEach(([u, pl], i) => {
+    parts.push(text(String(i + 1).padStart(2, '0'), { font: 'display', size: 18, x: pad, y, fill: i === 0 ? t.brass : t.muted }));
+    parts.push(body(`@${u}`, pad + 44, y, t.ink, 'start', 15));
+    parts.push(body(`${pl.built} · ${pl.forged} · ${pl.fired}`, W - pad, y, t.muted, 'end', 14));
+    y += 28;
   });
-  y += 29 + 26 * 3 + 6;
-  parts.push(dotRule(pad, W - pad, y, t));
-  y += 36;
-  parts.push(label('Chronicle', pad, y));
+  y += 2; parts.push(dotRule(pad, W - pad, y, t));
+  y += 34; parts.push(label('Chronicle', pad, y));
   const fallen = s.ages[0];
-  const chron = fallen
-    ? `The ${ordinal(fallen.age)} Age stood ${duration(fallen.startedAt, fallen.endedAt)}: ${fallen.stones} stones, ${fallen.forged} weapons, breached by @${fallen.fellTo}.`
-    : 'No castle has fallen yet.';
-  const chronLines = wrapText(chron, 'text', 19, W - pad * 2 - col);
-  chronLines.forEach((l, i) => parts.push(body(l, pad + col, y + 1 + i * 26, fallen ? t.ink : t.muted)));
-  y += 26 * chronLines.length + 6;
-  parts.push(dotRule(pad, W - pad, y, t));
-  y += 34;
-  parts.push(text('Click open ground to build, a stone with blue corners to fire, or a material to forge.', { font: 'text', size: 16.5, x: W / 2, y, fill: t.muted, anchor: 'middle' }));
-  const H = y + 30;
-
-  function text_width(str) { return type.layout(str, 'text', 19).width; }
+  const chron = fallen ? `The ${ordinal(fallen.age)} Age stood ${duration(fallen.startedAt, fallen.endedAt)}: ${fallen.stones} stones, ${fallen.forged} weapons, breached by @${fallen.fellTo}.` : 'No castle has fallen yet.';
+  const cl = wrapText(chron, 'text', 15, inner);
+  cl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * 22, fallen ? t.ink : t.muted, 'start', 15)));
+  y += 26 + 22 * cl.length;
+  // A legend for the board's marks, with the tiles themselves in miniature.
+  y += 6; parts.push(dotRule(pad, W - pad, y, t));
+  y += 34; parts.push(label('Reading the board', pad, y));
+  y += 16;
+  for (const [key, words] of [['e1', 'Open ground: click to build'], ['s2-0x', 'Blue corners: click to fire'], ['s2a-f', 'Brass core: a tower with a weapon'],
+    ['s1-0', 'Brass crack: one more hit breaks it'], ['k5', 'The keep: when it falls, a new age']]) {
+    parts.push(`<g transform="translate(${pad} ${y}) scale(0.3)"><rect width="100" height="100" rx="10" fill="${t.plate}"/>${dots(t, tileCells(key))}</g>`);
+    parts.push(body(words, pad + 44, y + 21, t.ink, 'start', 15));
+    y += 38;
+  }
+  const howY = Math.max(y + 34, PANEL_H - 62);
+  parts.push(dotRule(pad, W - pad, howY - 30, t));
+  wrapText('Every click opens an issue; press Create and the castle updates in about a minute. One move every 10 minutes.', 'text', 13.5, inner)
+    .forEach((l, i) => parts.push(body(l, pad, howY + i * 20, t.muted, 'start', 13.5)));
+  const H = Math.max(PANEL_H, howY + 2 * 20 + 18);
   const alt = `Hold the Keep. The ${ordinal(s.age)} Age. Keep ${keep.hp} of ${KEEP_HP}. ${countStones(s)} stones. On the walls: ${walls}. Bellows: ${bellows}. ${deeds.map((d) => `@${d.user} ${d.deed}`).join('. ')}. ${chron}`;
   return svg(W, H, alt, fontCss('display', 'text', 'label'), `${frame(W, H, t)}\n  ${parts.join('\n  ')}`);
 }
@@ -245,6 +273,9 @@ export function board(s, themes, type) {
       files.set(`assets/keep/forge-${m}-lit-${theme}.svg`, tileSvg(FORGE[m].map((r) => r.map((c) => (c === 'i' ? 'b' : c))), t));
     }
   }
+  const bars = Object.fromEntries(Object.entries(themes).map(([theme, t]) => [theme, forgeBarSvg(s, t, type)]));
+  const bar = `forgebar-${shortHash(Object.values(bars).join(''))}`;
+  for (const [theme, svg] of Object.entries(bars)) files.set(`assets/keep/${bar}-${theme}.svg`, svg);
   const panels = Object.fromEntries(Object.entries(themes).map(([theme, t]) => [theme, panelSvg(s, t, type)]));
   const panel = `panel-${shortHash(Object.values(panels).join(''))}`;
   for (const [theme, svg] of Object.entries(panels)) files.set(`assets/keep/${panel}-${theme}.svg`, svg);
@@ -256,21 +287,22 @@ export function board(s, themes, type) {
       if (!d.action) return img;
       const body = d.action === 'build' ? `Lay a stone at ${d.sq}.${NOTE}` : `Fire the trebuchet at ${d.sq}.${NOTE}`;
       return `<a href="${esc(issueUrl(`keep: ${d.action} ${d.sq}`, body))}">${img}</a>`;
-    }).join('\n'));
+    }).join(''));
   }
   const forge = MATERIALS.map((m) => {
     const lit = s.bellows.includes(m);
-    return `<a href="${esc(issueUrl(`keep: forge ${m}`, `Add ${m} to the forge. Every third material forges a weapon that guards a tower.${NOTE}`))}">${picture(`forge-${m}${lit ? '-lit' : ''}`, `Forge: add ${m}${lit ? ' (already in the bellows)' : ''}.`, '7%')}</a>`;
-  }).join('\n');
+    return `<a href="${esc(issueUrl(`keep: forge ${m}`, `Add ${m} to the forge. Every third material forges a weapon that guards a tower.${NOTE}`))}">${picture(`forge-${m}${lit ? '-lit' : ''}`, `Forge: add ${m}${lit ? ' (already in the bellows)' : ''}.`, TILE_WIDTH)}</a>`;
+  }).join('');
 
+  const panelImg = `<picture><source media="(prefers-color-scheme: dark)" srcset="assets/keep/${panel}-dark.svg"><img alt="The state of the castle: its age, the keep, the walls, recent deeds, the ranking of players, and the chronicle of fallen castles." src="assets/keep/${panel}-light.svg" width="${PANEL_WIDTH}" align="right"></picture>`;
   const markdown = `<!-- keep:start -->
-<p align="center">
+<p>
+${panelImg}
 ${rows.join('\n<br>\n')}
 <br>
-${forge}
+${picture(bar, `The forge. ${s.bellows.length ? `In the bellows: ${s.bellows.join(', ')}` : 'The bellows are cold'}.`, '32%')}${forge}
 </p>
-
-<p align="center">${picture(panel, 'The state of the castle: its age, the keep, the walls, recent deeds, the rolls of builders, smiths and raiders, and the chronicle of fallen castles.', '100%')}</p>
+<br clear="right">
 <!-- keep:end -->`;
   return { files, markdown };
 }

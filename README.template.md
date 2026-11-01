@@ -9,7 +9,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 #### ❦ The Ledger
 
-<a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.svg" width="100%"></picture></a>
+{{LEDGER}}
 
 #### ❦ The Arsenal
 
@@ -29,13 +29,6 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 #### ❦ The Chronicle
 
 {{CHRONICLE}}
-
-#### ❦ Year in Review
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.svg">
-  <img alt="Year in review: contributions, commits, pull requests, releases and stars this year." src="assets/year-light.svg" width="100%">
-</picture>
 
 #### ❦ Latest Dispatches
 

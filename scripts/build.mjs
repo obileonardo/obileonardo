@@ -23,6 +23,7 @@ const LOGIN = 'obileonardo';
 const PROJECTS = [
   {
     name: 'Hearth',
+    short: 'A macOS menu-bar companion for Home Assistant.',
     mark: 'H',
     repo: 'obileonardo/hearth-macos',
     what: 'A native macOS menu-bar companion for Home Assistant.',
@@ -31,6 +32,7 @@ const PROJECTS = [
   },
   {
     name: 'Clepso',
+    short: "A menu-bar monitor for your AI agents' usage limits.",
     mark: 'Cl',
     repo: 'obileonardo/clepso',
     what: "A native macOS menu-bar monitor for your AI coding agents' usage limits (Claude Code and Codex). Local-first, private by design.",
@@ -39,6 +41,7 @@ const PROJECTS = [
   },
   {
     name: 'Capsa',
+    short: 'A local-first library for what you learn working with AI.',
     mark: 'Ca',
     repo: 'obileonardo/capsa-oss',
     what: 'A local-first library for what you learn about working with AI, with the evidence each item came from. App, MCP server and command line.',
@@ -47,6 +50,7 @@ const PROJECTS = [
   },
   {
     name: 'Builders World',
+    short: 'A browser world in real African cities, built from commits.',
     mark: 'BW',
     repo: 'builders-world/builders-world',
     what: 'A living, browser-based world set in real African cities, where your GitHub commits are your currency.',
@@ -56,6 +60,7 @@ const PROJECTS = [
   },
   {
     name: 'Mazerance',
+    short: 'A psychological co-op strategy game, built at FiveBlooded.',
     url: 'https://x.com/Mazerance',
     what: 'A psychological co-op strategy game, built at FiveBlooded.',
     built: 'Unreal Engine 5',
@@ -64,6 +69,7 @@ const PROJECTS = [
   },
   {
     name: 'Halfwings',
+    short: 'The software and hardware partner for technology businesses.',
     mark: 'Hw',
     url: 'https://x.com/HalfwingsInc',
     what: 'The software and hardware development partner for technology businesses.',
@@ -75,11 +81,11 @@ const PROJECTS = [
 
 // Elsewhere. `mark` is the monogram on each badge.
 const SEALS = [
-  { id: 'portfolio', label: 'Portfolio', mark: 'E', url: 'https://elvisobi.com', alt: 'Portfolio: elvisobi.com' },
-  { id: 'x', label: 'X', mark: 'X', url: 'https://x.com/TheObiLeonard', alt: 'X: @TheObiLeonard' },
-  { id: 'linkedin', label: 'LinkedIn', mark: 'in', url: 'https://www.linkedin.com/in/elvisobi', alt: 'LinkedIn: in/elvisobi' },
-  { id: 'contra', label: 'Contra', mark: 'C', url: 'https://contra.com/elvisobi', alt: 'Contra: elvisobi' },
-  { id: 'letter', label: 'Write a letter', mark: '@', url: 'mailto:contact@elvisobi.com?subject=A%20letter%20for%20Elvis', alt: 'Email: contact@elvisobi.com' },
+  { id: 'portfolio', handle: 'elvisobi.com', label: 'Portfolio', mark: 'E', url: 'https://elvisobi.com', alt: 'Portfolio: elvisobi.com' },
+  { id: 'x', handle: '@TheObiLeonard', label: 'X', mark: 'X', url: 'https://x.com/TheObiLeonard', alt: 'X: @TheObiLeonard' },
+  { id: 'linkedin', handle: 'in/elvisobi', label: 'LinkedIn', mark: 'in', url: 'https://www.linkedin.com/in/elvisobi', alt: 'LinkedIn: in/elvisobi' },
+  { id: 'contra', handle: 'contra.com/elvisobi', label: 'Contra', mark: 'C', url: 'https://contra.com/elvisobi', alt: 'Contra: elvisobi' },
+  { id: 'letter', handle: 'contact@elvisobi.com', label: 'Write a letter', mark: '@', url: 'mailto:contact@elvisobi.com?subject=A%20letter%20for%20Elvis', alt: 'Email: contact@elvisobi.com' },
 ];
 
 
@@ -349,44 +355,15 @@ function heading(t, label) {
 }
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// ---------------------------------------------------------------- year in review
+// ---------------------------------------------------------------- the ledger band
+//
+// The contribution chart and the year's numbers sit side by side in one band, like tiles in a bento
+// grid. The chart sets the band's height; the numbers tile is drawn to the same rendered height.
 
-function yearCard(t, year, stats) {
-  const W = 1280, H = 300, pad = 64;
-  const colW = (W - 2 * pad) / stats.length;
-  const cols = stats
-    .map((s, i) => {
-      const cx = pad + colW * (i + 0.5);
-      const sep = i ? dotColumn(r1(pad + colW * i), 132, 252, t) : '';
-      return `${sep}<g class="rise" style="animation-delay:${r1(0.1 + i * 0.12)}s">
-    ${text(fmt(s.value), { font: 'display', size: 54, x: cx, y: 184, fill: t.ink, anchor: 'middle' })}
-    ${text(s.label.toUpperCase(), { font: 'label', size: 15, spacing: 2.6, x: cx, y: 222, fill: t.muted, anchor: 'middle' })}
-    ${text(roman(s.value) || ' ', { font: 'text', size: 18, x: cx, y: 248, fill: t.muted, style: 'opacity:.7', anchor: 'middle' })}
-  </g>`;
-    })
-    .join('\n  ');
-
-  const css = `${fontCss('display', 'text', 'label')}
-.rise{opacity:0;animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.rise{animation:none;opacity:1}}`;
-
-  const summary = stats.map((s) => `${fmt(s.value)} ${s.label.toLowerCase()}`).join(', ');
-  return svg(
-    W, H, `Year in review, ${year}: ${summary}.`, css,
-    `${frame(W, H, t)}
-  ${text(`ANNO DOMINI ${roman(year)}`, { font: 'label', size: 17, spacing: 4.5, x: pad, y: 70, fill: t.brass })}
-  ${dotRule(pad, W - pad, 92, t)}
-  ${cols}`,
-  );
-}
-
-// ---------------------------------------------------------------- the ledger
-
-// The contribution chart, as on the profile itself: a year of days, one square each, in cobalt
-// rather than green, with months along the top and the weekdays down the side.
 const LEVELS = ['NONE', 'FIRST_QUARTILE', 'SECOND_QUARTILE', 'THIRD_QUARTILE', 'FOURTH_QUARTILE'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const LEDGER_PCT = 63, YEAR_PCT = 35;
+const L = { cell: 11, gap: 3, pad: 26, days: 34, top: 92, foot: 46 };
 
 function levelColours(t, dark) {
   const ramp = dark ? [0.22, 0.42, 0.66, 1] : [0.22, 0.45, 0.72, 1];
@@ -394,160 +371,184 @@ function levelColours(t, dark) {
   return [t.plate, ...ramp.map((k) => mixHex(t.bg, t.accent, k))];
 }
 
+function ledgerSize(calendar) {
+  const step = L.cell + L.gap;
+  return { W: L.pad + L.days + calendar.weeks.length * step - L.gap + L.pad, H: L.top + 7 * step - L.gap + L.foot };
+}
+
 function ledger(t, calendar, dark) {
-  const cell = 15, gap = 4, step = cell + gap;
-  const weeks = calendar.weeks;
-  const pad = 40, left = pad + 44, top = 132;
-  const W = left + weeks.length * step - gap + pad;
-  const H = top + 7 * step - gap + 64;
+  const { cell, gap, pad, days: dw, top } = L;
+  const step = cell + gap, left = pad + dw;
+  const { W, H } = ledgerSize(calendar);
   const colours = levelColours(t, dark);
-  let squares = '';
-  let months = '';
-  let lastMonth = -1;
-  weeks.forEach((w, i) => {
+  let squares = '', months = '', lastMonth = -1;
+  calendar.weeks.forEach((w, i) => {
     const x = left + i * step;
     w.contributionDays.forEach((d) => {
       const day = new Date(`${d.date}T00:00:00Z`).getUTCDay();
       const lvl = Math.max(0, LEVELS.indexOf(d.contributionLevel));
-      squares += `<rect x="${x}" y="${top + day * step}" width="${cell}" height="${cell}" rx="2" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
+      squares += `<rect x="${x}" y="${top + day * step}" width="${cell}" height="${cell}" rx="1.5" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
     });
-    const first = w.contributionDays[0];
-    const m = new Date(`${first.date}T00:00:00Z`).getUTCMonth();
-    if (m !== lastMonth && i < weeks.length - 2) {
-      months += text(SHORT_MONTHS[m], { font: 'text', size: 15, x, y: top - 12, fill: t.muted });
-      lastMonth = m;
-    }
+    const m = new Date(`${w.contributionDays[0].date}T00:00:00Z`).getUTCMonth();
+    if (m !== lastMonth && i < calendar.weeks.length - 2) { months += text(SHORT_MONTHS[m], { font: 'text', size: 12, x, y: top - 9, fill: t.muted }); lastMonth = m; }
   });
-  const days = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 14, x: pad, y: top + d * step + 12, fill: t.muted })).join('');
-  const legendY = top + 7 * step + 26;
-  const lx = W - pad - 5 * step - 50;
-  const legend = `${text('Less', { font: 'text', size: 14, x: lx - 8, y: legendY + 12, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${lx + i * step}" y="${legendY}" width="${cell}" height="${cell}" rx="2" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: 14, x: lx + 5 * step + 4, y: legendY + 12, fill: t.muted })}`;
+  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 11, x: pad, y: top + d * step + 9, fill: t.muted })).join('');
+  const ly = top + 7 * step + 16;
+  const lx = W - pad - 5 * step - 34;
+  const legend = `${text('Less', { font: 'text', size: 11, x: lx - 6, y: ly + 9, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${lx + i * step}" y="${ly}" width="${cell}" height="${cell}" rx="1.5" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: 11, x: lx + 5 * step + 3, y: ly + 9, fill: t.muted })}`;
   const total = fmt(calendar.totalContributions);
   return svg(
     W, H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
-    `${frame(W, H, t)}
-  ${text(total, { font: 'display', size: 44, spacing: 1, x: pad, y: 78, fill: t.ink })}
-  ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 15, spacing: 2.4, x: pad + layout(total, 'display', 44, 1).width + 18, y: 76, fill: t.brass })}
-  ${text('github.com/obileonardo', { font: 'text', size: 15, x: W - pad, y: 76, fill: t.accent, anchor: 'end' })}
-  ${months}
-  ${days}
-  ${squares}
-  ${text('Every square is a day. Brighter means more.', { font: 'text', size: 14, x: pad, y: legendY + 12, fill: t.muted })}
+    `${frame(W, H, t, 5)}
+  ${text(total, { font: 'display', size: 30, spacing: 1, x: pad, y: 52, fill: t.ink })}
+  ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 11.5, spacing: 2, x: pad + layout(total, 'display', 30, 1).width + 14, y: 50, fill: t.brass })}
+  ${months}${dayLabels}${squares}
+  ${text('github.com/obileonardo', { font: 'text', size: 11, x: pad, y: ly + 9, fill: t.accent })}
   ${legend}`,
   );
 }
 
-// ---------------------------------------------------------------- armoury
-
-function shield(cx, y0, t) {
-  return `${pixelShape(cx - 31, y0, 62, 62, 5, t.edge)}${pixelShape(cx - 27, y0 + 4, 54, 54, 5, t.plate)}`;
-}
-
-function armoury(t) {
-  const W = 1280, pad = 64, hallW = 250, cell = 152, rowH = 158, top = 124;
-  const H = top + ARMOURY.length * rowH + 8;
-  let n = 0;
-  const rows = ARMOURY.map((row, ri) => {
-    const y = top + ri * rowH;
-    const sep = ri ? dotRule(pad, W - pad, y - 16, t, 3, 9) : '';
-    const hall = `${text(row.hall.toUpperCase(), { font: 'label', size: 17, spacing: 2.6, x: pad, y: y + 40, fill: t.ink })}
-    ${text(row.kind, { font: 'text', size: 19, x: pad, y: y + 68, fill: t.muted })}`;
-    const tools = row.tools.map(([slug, label], i) => {
-      const cx = pad + hallW + cell * (i + 0.5);
-      let glyph;
-      if (slug.mono) {
-        glyph = `<rect x="${r1(cx - 15)}" y="${y + 14}" width="30" height="30" rx="6" fill="none" stroke="${t.ink}" stroke-width="2.2"/>
-      ${text(slug.mono, { font: 'display', size: 16, x: cx, y: y + 35, fill: t.ink, anchor: 'middle' })}`;
-      } else {
-        if (!icons[slug]) throw new Error(`Missing icon in scripts/icons.json: ${slug}`);
-        glyph = `<path transform="translate(${r1(cx - 14)} ${y + 15}) scale(${r1(28 / 24 * 1000) / 1000})" d="${icons[slug]}" fill="${t.ink}"/>`;
-      }
-      const caps = label.toUpperCase();
-      let size = 14;
-      while (size > 10 && layout(caps, 'label', size, 1.6).width > cell - 14) size -= 0.5;
-      return `<g class="rise" style="animation-delay:${r1(0.08 + n++ * 0.05)}s">${shield(cx, y, t)}
-      ${glyph}
-      ${text(caps, { font: 'label', size, spacing: 1.6, x: cx, y: y + 100, fill: t.ink, anchor: 'middle' })}</g>`;
-    });
-    return `${sep}${hall}\n    ${tools.join('\n    ')}`;
-  });
-
-  const css = `${fontCss('display', 'text', 'label')}
-.rise{opacity:0;animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
-@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.rise{animation:none;opacity:1}}`;
-
-  const title = `The Armoury. ${ARMOURY.map((r) => `${r.kind[0].toUpperCase()}${r.kind.slice(1)}: ${r.tools.map(([, l]) => l).join(', ')}`).join('. ')}.`;
+// The year's numbers, quietly: a small label, then one line per figure.
+function yearTile(t, year, stats, calendar) {
+  const lg = ledgerSize(calendar);
+  const W = 460, H = Math.round((lg.H / lg.W) * (LEDGER_PCT / YEAR_PCT) * W);
+  const pad = 28, top = 70;
+  const rowH = (H - top - 18) / stats.length;
+  const size = Math.min(24, rowH * 0.72);
+  const rows = stats.map((s, i) => {
+    const y = top + rowH * (i + 0.72);
+    const sep = i ? dotRule(pad, W - pad, r1(top + rowH * i - 2), t, 2, 8) : '';
+    return `${sep}${text(fmt(s.value), { font: 'display', size: r1(size), spacing: 0.5, x: pad, y: r1(y), fill: t.ink })}
+    ${text(s.label.toLowerCase(), { font: 'text', size: 13, x: W - pad, y: r1(y - 2), fill: t.muted, anchor: 'end' })}`;
+  }).join('\n  ');
+  const summary = stats.map((s) => `${fmt(s.value)} ${s.label.toLowerCase()}`).join(', ');
   return svg(
-    W, H, title, css,
-    `${frame(W, H, t)}
-  ${text('TOOLS OF THE TRADE', { font: 'label', size: 17, spacing: 4.5, x: pad, y: 70, fill: t.brass })}
-  ${dotRule(pad, W - pad, 92, t)}
-  ${rows.join('\n  ')}`,
+    W, H, `${year} so far: ${summary}.`, fontCss('display', 'text', 'label'),
+    `${frame(W, H, t, 5)}
+  ${text(`ANNO DOMINI ${roman(year)}`, { font: 'label', size: 11.5, spacing: 2, x: pad, y: 44, fill: t.brass })}
+  ${rows}`,
   );
 }
 
-// ---------------------------------------------------------------- dispatches
+// ---------------------------------------------------------------- the armoury: one wall of tools
 
-// ---------------------------------------------------------------- tiles
-//
-// The Arsenal, the Chronicle and the dispatches are stacks of tiles, one image per row, so each row
-// can be its own link. They share the card frame, scaled down.
+function armoury(t) {
+  const tools = ARMOURY.flatMap((r) => r.tools);
+  const cols = 9, cellW = 106, cellH = 116, pad = 32, top = 74;
+  const W = pad * 2 + cols * cellW, H = top + Math.ceil(tools.length / cols) * cellH + 14;
+  const cells = tools.map(([slug, label], i) => {
+    const cx = pad + cellW * ((i % cols) + 0.5), y0 = top + Math.floor(i / cols) * cellH;
+    let glyph;
+    if (slug.mono) {
+      glyph = text(slug.mono, { font: 'display', size: 17, x: cx, y: y0 + 32, fill: t.ink, anchor: 'middle' });
+    } else {
+      if (!icons[slug]) throw new Error(`Missing icon in scripts/icons.json: ${slug}`);
+      glyph = `<path transform="translate(${r1(cx - 13)} ${y0 + 13}) scale(${r1(26 / 24 * 1000) / 1000})" d="${icons[slug]}" fill="${t.ink}"/>`;
+    }
+    const caps = label.toUpperCase();
+    let size = 11;
+    while (size > 8 && layout(caps, 'label', size, 1.2).width > cellW - 10) size -= 0.5;
+    return `<g class="rise" style="animation-delay:${r1(0.05 + i * 0.03)}s">${pixelShape(cx - 26, y0, 52, 52, 4, t.edge)}${pixelShape(cx - 23, y0 + 3, 46, 46, 4, t.plate)}
+    ${glyph}
+    ${text(caps, { font: 'label', size, spacing: 1.2, x: cx, y: y0 + 76, fill: t.ink, anchor: 'middle' })}</g>`;
+  });
+  const halls = ARMOURY.map((r) => r.kind).join(' · ');
+  const title = `The Armoury. ${ARMOURY.map((r) => `${r.kind[0].toUpperCase()}${r.kind.slice(1)}: ${r.tools.map(([, l]) => l).join(', ')}`).join('. ')}.`;
+  return svg(
+    W, H, title, `${fontCss('display', 'text', 'label')}\n${CSS_RISE}`,
+    `${frame(W, H, t)}
+  <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><rect x="9" y="9" width="2" height="2" fill="${t.edge}"/></pattern></defs>
+  <rect x="${PX * 2}" y="${PX * 2}" width="${W - PX * 4}" height="${H - PX * 4}" fill="url(#grid)" opacity=".7"/>
+  ${text('TOOLS OF THE TRADE', { font: 'label', size: 13, spacing: 3, x: pad, y: 48, fill: t.brass })}
+  ${text(halls, { font: 'text', size: 14, x: W - pad, y: 48, fill: t.muted, anchor: 'end' })}
+  ${cells.join('\n  ')}`,
+  );
+}
 
-const TILE_W = 1000, TILE_P = 5;
+// ---------------------------------------------------------------- the arsenal: small project cards
 
-function projectTile(t, p, info) {
-  const pad = 30, x = 124;
-  const desc = wrapText(p.what, 'text', 20, 540);
-  const H = Math.max(128, 84 + desc.length * 27 + 18);
-  const right = TILE_W - pad - 6;
+function projectCard(t, p, info) {
+  const W = 320, H = 176, pad = 18, x = pad + 52;
+  const name = p.name.toUpperCase();
+  let ns = 18;
+  while (ns > 13 && layout(name, 'display', ns, 0.5).width > W - x - pad) ns -= 0.5;
+  const desc = wrapText(p.short ?? p.what, 'text', 13, W - 2 * pad).slice(0, 2);
   let standing;
   if (info?.stars || info?.latest) {
-    const parts = [];
-    if (info.stars) parts.push(`${pixelStar(right - 98 - (info.latest ? layout(info.latest.tagName, 'text', 19).width + 26 : 0), 92, 3, t.brass)}`);
-    standing = `${parts.join('')}${info.stars ? text(String(info.stars), { font: 'text', size: 19, x: right - 76 - (info.latest ? layout(info.latest.tagName, 'text', 19).width + 26 : 0), y: 106, fill: t.ink }) : ''}
-    ${info.latest ? text(info.latest.tagName, { font: 'text', size: 19, x: right, y: 106, fill: t.brass, anchor: 'end' }) : ''}`;
+    const ver = info.latest ? info.latest.tagName : '';
+    const verW = ver ? layout(ver, 'text', 12).width : 0;
+    const starX = W - pad - verW - (ver ? 12 : 0) - (info.stars ? 34 : 0);
+    standing = `${info.stars ? `${pixelStar(starX, 147, 2, t.brass)}${text(String(info.stars), { font: 'text', size: 12, x: starX + 14, y: 157, fill: t.ink })}` : ''}${ver ? text(ver, { font: 'text', size: 12, x: W - pad, y: 157, fill: t.brass, anchor: 'end' }) : ''}`;
   } else {
-    standing = text(p.standing ?? '', { font: 'text', size: 19, x: right, y: 106, fill: t.muted, anchor: 'end' });
+    standing = text(p.standing ?? '', { font: 'text', size: 12, x: W - pad, y: 157, fill: t.muted, anchor: 'end' });
   }
   return svg(
-    TILE_W, H, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
-    `${frame(TILE_W, H, t, TILE_P)}
-  ${badge(pad + 4, 30, 68, p.mark ?? p.name[0], t)}
-  ${text(p.name.toUpperCase(), { font: 'display', size: 30, spacing: 1, x, y: 60, fill: t.ink })}
-  ${text(`→ ${p.get.label}`, { font: 'label', size: 14, spacing: 1.6, x: x + layout(p.name.toUpperCase(), 'display', 30, 1).width + 18, y: 56, fill: t.accent })}
-  ${desc.map((l, i) => text(l, { font: 'text', size: 20, x, y: 92 + i * 27, fill: t.muted })).join('\n  ')}
-  ${text('BUILT WITH', { font: 'label', size: 13, spacing: 2, x: right, y: 46, fill: t.muted, anchor: 'end' })}
-  ${text(p.built, { font: 'text', size: 19, x: right, y: 72, fill: t.ink, anchor: 'end' })}
+    W, H, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
+    `${frame(W, H, t, 4)}
+  ${badge(pad, pad, 40, p.mark ?? p.name[0], t, 4)}
+  ${text(name, { font: 'display', size: r1(ns), spacing: 0.5, x, y: pad + 17, fill: t.ink })}
+  ${text(`→ ${p.get.label.toUpperCase()}`, { font: 'label', size: 10.5, spacing: 1.4, x, y: pad + 36, fill: t.accent })}
+  ${desc.map((l, i) => text(l, { font: 'text', size: 13, x: pad, y: 90 + i * 18, fill: t.muted })).join('\n  ')}
+  ${dotRule(pad, W - pad, 132, t, 3, 7)}
+  ${text(p.built, { font: 'text', size: 12, x: pad, y: 157, fill: t.muted })}
   ${standing}`,
   );
 }
 
-function chronicleTile(t, c) {
-  const pad = 30, x = 172;
-  const field = wrapText(c.field, 'text', 19, 760);
-  const H = 70 + field.length * 26 + 22;
+// ---------------------------------------------------------------- the chronicle: one timeline
+
+function timeline(t) {
+  const items = [...CHRONICLE].sort((a, b) => a.since - b.since);
+  const W = 1040, pad = 34, stepX = 160, x0 = 56, textW = 296;
+  // Each entry is a block of lines read top to bottom; the year always sits next to the line.
+  const blocks = items.map((c) => ({ c, field: wrapText(c.field, 'text', 12.5, textW).slice(0, 3) }));
+  const blockH = (b) => 28 + 22 + 20 + b.field.length * 17;
+  const upH = Math.max(...blocks.filter((_, i) => i % 2 === 0).map(blockH));
+  const downH = Math.max(...blocks.filter((_, i) => i % 2 === 1).map(blockH));
+  const lineY = pad + upH + 18, H = lineY + 18 + downH + pad;
+  const parts = [dotRule(pad, W - pad, lineY - 2, t, 4, 6)];
+  blocks.forEach((b, i) => {
+    const x = x0 + i * stepX, above = i % 2 === 0;
+    parts.push(`<rect x="${x - 1}" y="${lineY - 9}" width="8" height="16" fill="${i === blocks.length - 1 ? t.accent : t.brass}"/>`);
+    const lines = [
+      ['year', String(b.c.since)], ['role', b.c.role.toUpperCase()], ['house', b.c.house], ...b.field.map((f) => ['field', f]),
+    ];
+    const order = above ? [lines[1], lines[2], ...lines.slice(3), lines[0]] : lines;
+    let y = above ? lineY - 14 - blockH(b) : lineY + 16;
+    for (const [kind, str] of order) {
+      const h = kind === 'year' ? 28 : kind === 'role' ? 22 : kind === 'house' ? 20 : 17;
+      y += h;
+      const base = y - (kind === 'year' ? 4 : 5);
+      const st = {
+        year: { font: 'display', size: 24, spacing: 1, fill: t.brass },
+        role: { font: 'display', size: 15, spacing: 0.6, fill: t.ink },
+        house: { font: 'text', size: 13, fill: b.c.url ? t.accent : t.muted },
+        field: { font: 'text', size: 12.5, fill: t.muted },
+      }[kind];
+      parts.push(text(str, { ...st, x: x + 14, y: base }));
+    }
+  });
   return svg(
-    TILE_W, H, `${c.role}, ${c.house}, since ${c.since}. ${c.field}.`, fontCss('display', 'text', 'label'),
-    `${frame(TILE_W, H, t, TILE_P)}
-  ${text(String(c.since), { font: 'display', size: 40, spacing: 1, x: pad + 6, y: 70, fill: t.brass })}
-  ${text(c.role.toUpperCase(), { font: 'display', size: 26, spacing: 1, x, y: 56, fill: t.ink })}
-  ${text(c.house, { font: 'text', size: 19, x: TILE_W - pad - 6, y: 54, fill: c.url ? t.accent : t.muted, anchor: 'end' })}
-  ${field.map((l, i) => text(l, { font: 'text', size: 19, x, y: 90 + i * 26, fill: t.muted })).join('\n  ')}`,
+    W, H, `The Chronicle: ${items.map((c) => `${c.since}, ${c.role}, ${c.house}: ${c.field}`).join('; ')}.`, fontCss('display', 'text', 'label'),
+    `${frame(W, H, t)}\n  ${parts.join('\n  ')}`,
   );
 }
 
-function dispatchTile(t, r) {
-  const pad = 30, H = 88, x = 104;
+// ---------------------------------------------------------------- dispatches: a compact changelog
+
+function dispatchRow(t, r) {
+  const W = 1000, H = 54, p = 3;
   const name = r.project.toUpperCase();
-  const nameW = layout(name, 'display', 26, 1).width;
+  const nameW = layout(name, 'display', 17, 0.6).width;
+  const date = r.publishedAt.slice(0, 10);
   return svg(
-    TILE_W, H, `${r.project} ${r.tagName}, released ${longDate(r.publishedAt)}.`, fontCss('display', 'text', 'label'),
-    `${frame(TILE_W, H, t, TILE_P)}
-  ${badge(pad + 4, 20, 48, r.mark ?? r.project[0], t, 4)}
-  ${text(name, { font: 'display', size: 26, spacing: 1, x, y: 54, fill: t.ink })}
-  ${text(r.tagName, { font: 'text', size: 20, x: x + nameW + 18, y: 54, fill: t.brass })}
-  ${text(longDate(r.publishedAt), { font: 'text', size: 19, x: TILE_W - pad - 6, y: 54, fill: t.muted, anchor: 'end' })}`,
+    W, H, `${r.project} ${r.tagName}, released ${longDate(r.publishedAt)}.`, fontCss('display', 'text', 'label'),
+    `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
+  ${text(date, { font: 'text', size: 15, x: 24, y: 33, fill: t.muted })}
+  ${badge(150, 12, 30, r.mark ?? r.project[0], t, 3)}
+  ${text(name, { font: 'display', size: 17, spacing: 0.6, x: 194, y: 33, fill: t.ink })}
+  ${text(r.tagName, { font: 'text', size: 15, x: 194 + nameW + 14, y: 33, fill: t.brass })}
+  ${text('release notes →', { font: 'text', size: 13, x: W - 24, y: 32, fill: t.accent, anchor: 'end' })}`,
   );
 }
 
@@ -556,18 +557,19 @@ function dispatchAlt(list) {
   return `Latest dispatches: ${list.map((r) => `${r.project} ${r.tagName}, ${longDate(r.publishedAt)}`).join('; ')}.`;
 }
 
-// ---------------------------------------------------------------- seals
+// ---------------------------------------------------------------- elsewhere: link cards
 
 function seal(t, s) {
-  const H = 52, p = 4;
-  const label = s.label.toUpperCase();
-  const lw = layout(label, 'label', 14, 2).width;
-  const W = Math.ceil(10 + 32 + 14 + lw + 22);
+  const W = 220, H = 150, pad = 18;
+  let hs = 13;
+  while (hs > 9 && layout(s.handle, 'text', hs).width > W - 2 * pad) hs -= 0.5;
   return svg(
-    W, H, s.alt, fontCss('display', 'label'),
-    `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
-  ${badge(10, 10, 32, s.mark, t, 4)}
-  ${text(label, { font: 'label', size: 14, spacing: 2, x: 56, y: 31, fill: t.ink })}`,
+    W, H, s.alt, fontCss('display', 'text', 'label'),
+    `${frame(W, H, t, 4)}
+  ${badge(pad, pad, 34, s.mark, t, 4)}
+  ${text('→', { font: 'text', size: 22, x: W - pad, y: pad + 24, fill: t.accent, anchor: 'end' })}
+  ${text(s.label.toUpperCase(), { font: 'display', size: s.label.length > 10 ? 15 : 18, spacing: 0.6, x: pad, y: 98, fill: t.ink })}
+  ${text(s.handle, { font: 'text', size: r1(hs), x: pad, y: 124, fill: t.muted })}`,
   );
 }
 
@@ -577,21 +579,23 @@ function picture(base, alt, attrs = 'width="100%"') {
   return `<picture><source media="(prefers-color-scheme: dark)" srcset="${base}-dark.svg"><img alt="${esc(alt)}" src="${base}-light.svg" ${attrs}></picture>`;
 }
 
-function tileStack(items) {
-  return items.map(({ href, base, alt }) => (href ? `<a href="${esc(href)}">${picture(base, alt)}</a>` : picture(base, alt))).join('\n');
+const linked = (href, inner) => (href ? `<a href="${esc(href)}">${inner}</a>` : inner);
+
+function ledgerBand() {
+  return `<p>${linked('https://github.com/obileonardo?tab=repositories', picture('assets/ledger', 'Contribution chart: a year of contributions, one square per day, brighter for busier days.', `width="${LEDGER_PCT}%"`))} ${picture('assets/year', "This year's numbers: contributions, commits, pull requests, releases and stars.", `width="${YEAR_PCT}%"`)}</p>`;
 }
 
-function arsenal(repoInfo) {
-  return tileStack(PROJECTS.map((p) => ({ href: p.get.url, base: `assets/arsenal/${slug(p.name)}`, alt: `${p.name}: ${p.what}` })));
+function arsenal() {
+  return `<p>\n${PROJECTS.map((p) => linked(p.get.url, picture(`assets/arsenal/${slug(p.name)}`, `${p.name}: ${p.what}`, 'width="32%"'))).join('\n')}\n</p>`;
 }
 
 function chronicle() {
-  return tileStack(CHRONICLE.map((c, i) => ({ href: c.url, base: `assets/chronicle/${i}`, alt: `${c.role}, ${c.house}, since ${c.since}: ${c.field}` })));
+  return linked('https://www.linkedin.com/in/elvisobi', picture('assets/chronicle', `The Chronicle: ${CHRONICLE.map((c) => `${c.since}, ${c.role}, ${c.house}`).join('; ')}.`));
 }
 
 function dispatches(list) {
   if (!list.length) return '<p><i>No dispatches yet.</i></p>';
-  return tileStack(list.map((r, i) => ({ href: r.url, base: `assets/dispatches/${i}`, alt: `${r.project} ${r.tagName}, ${longDate(r.publishedAt)}` })));
+  return list.map((r, i) => linked(r.url, picture(`assets/dispatches/${i}`, `${r.project} ${r.tagName}, ${longDate(r.publishedAt)}`))).join('\n');
 }
 
 function headingPicture(h) {
@@ -600,10 +604,7 @@ function headingPicture(h) {
 }
 
 function seals() {
-  const items = SEALS.map(
-    (s) => `<a href="${esc(s.url)}"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/seals/${s.id}-dark.svg"><img alt="${esc(s.alt)}" src="assets/seals/${s.id}-light.svg" height="44"></picture></a>`,
-  );
-  return `<p align="center">\n  ${items.join('\n  ')}\n</p>`;
+  return `<p align="center">\n${SEALS.map((s) => linked(s.url, picture(`assets/seals/${s.id}`, s.alt, 'width="18.6%"'))).join('\n')}\n</p>`;
 }
 
 // ---------------------------------------------------------------- main
@@ -621,11 +622,11 @@ async function main() {
 
   for (const [name, t] of Object.entries(THEMES)) {
     for (const h of HEADINGS) files.set(`assets/headings/${slug(h)}-${name}.svg`, heading(t, h));
-    if (!HOURLY) files.set(`assets/year-${name}.svg`, yearCard(t, data.year, data.stats));
+    if (!HOURLY) files.set(`assets/year-${name}.svg`, yearTile(t, data.year, data.stats, data.calendar));
     if (!HOURLY) files.set(`assets/ledger-${name}.svg`, ledger(t, data.calendar, name === 'dark'));
-    data.dispatches.forEach((r, i) => files.set(`assets/dispatches/${i}-${name}.svg`, dispatchTile(t, r)));
-    for (const p of PROJECTS) files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectTile(t, p, p.repo ? data.repoInfo.get(p.repo) : null));
-    CHRONICLE.forEach((c, i) => files.set(`assets/chronicle/${i}-${name}.svg`, chronicleTile(t, c)));
+    data.dispatches.forEach((r, i) => files.set(`assets/dispatches/${i}-${name}.svg`, dispatchRow(t, r)));
+    for (const p of PROJECTS) files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectCard(t, p, p.repo ? data.repoInfo.get(p.repo) : null));
+    files.set(`assets/chronicle-${name}.svg`, timeline(t));
     files.set(`assets/armoury-${name}.svg`, armoury(t));
     for (const s of SEALS) files.set(`assets/seals/${s.id}-${name}.svg`, seal(t, s));
   }
@@ -638,7 +639,8 @@ async function main() {
 
   const readme = template
     .replace(/^#{3,4} (?:❦ )?(.+)$/gm, (_, h) => headingPicture(h))
-    .replace('{{ARSENAL}}', arsenal(data.repoInfo))
+    .replace('{{LEDGER}}', ledgerBand())
+    .replace('{{ARSENAL}}', arsenal())
     .replace('{{DISPATCHES}}', dispatches(data.dispatches))
     .replace('{{CHRONICLE}}', chronicle())
     .replace('{{SEALS}}', seals())

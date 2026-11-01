@@ -273,7 +273,8 @@ def big_dots(cv, s, x, y, col, shadow):
         for j, row in enumerate(rows):
             for i, v in enumerate(row):
                 if v == '#':
-                    cv.rect(x + i * 3 + 1, y + j * 3 + 1, 2, 2, shadow)
+                    if shadow is not None:
+                        cv.rect(x + i * 3 + 1, y + j * 3 + 1, 2, 2, shadow)
                     cv.rect(x + i * 3, y + j * 3, 2, 2, col)
         x += 17
     return x
@@ -1288,21 +1289,23 @@ def caption_bar(P, tt):
     cv = Canvas(np.zeros((BAR_H, W, 3), np.uint8))
     cv.c[:] = paper
     cv.hline(0, W - 1, 0, mix(ink, paper, 0.8))
-    big_dots(cv, str(year_at(tt)), 10, BAR_Y, ink, mix(ink, paper, 0.85))
+    big_dots(cv, str(year_at(tt)), 10, BAR_Y, ink, None)
     tx0, tx1 = 84, W - 10
     dot_text(cv, ERAS[e][2], tx0, BAR_Y, P['accent2'])
-    ty = BAR_Y + 13
+    # The timeline, kept quiet: a one-pixel track, the time passed drawn over it in cobalt, a small
+    # tick per era, and one brass square for now. Labels are soft for the past, brass for the current
+    # era (matching its name above) and faint for what's to come.
+    ty = BAR_Y + 14
     xs = [tx0 + 7 + (tx1 - tx0 - 15) * i / (N_ERAS - 1) for i in range(N_ERAS)]
     span = min(1.0, p / 0.85)
     now = xs[e] + ((xs[e + 1] - xs[e]) * span if e < N_ERAS - 1 else 0)
-    cv.hline(tx0, tx1, ty, dim)
-    cv.rect(tx0, ty - 1, max(0, now - tx0), 3, acc)
+    past, future = mix(ink, paper, 0.42), mix(ink, paper, 0.74)
+    cv.hline(xs[0], xs[-1], ty, future)
+    cv.hline(xs[0], now, ty, acc)
     for i, x in enumerate(xs):
-        col = acc if i == e else ink if i < e else dim
-        cv.rect(x - 1, ty - 2, 2, 5, col)
-        tiny(cv, str(ERAS[i][0]), x - 7, ty + 5, col)
-    cv.rect(now - 2, ty - 3, 4, 7, ink)
-    cv.rect(now - 1, ty - 2, 2, 5, P['accent2'])
+        cv.rect(round(x), ty - 1, 1, 3, acc if i <= e else future)
+        tiny(cv, str(ERAS[i][0]), round(x) - 7, ty + 5, P['accent2'] if i == e else past if i < e else future)
+    cv.rect(round(now) - 1, ty - 1, 3, 3, P['accent2'])
     return cv.c
 
 
