@@ -108,11 +108,26 @@ const ARMOURY = [
   { hall: 'The Keep', kind: 'infrastructure', tools: [['vercel', 'Vercel'], ['supabase', 'Supabase'], ['docker', 'Docker'], ['githubactions', 'GitHub Actions'], ['homeassistant', 'Home Assistant'], ['homebrew', 'Homebrew']] },
 ];
 
-const THEMES = {
-  // Paper and ink by day, indigo by night; cobalt and brass as the accents, matching the story.
-  light: { bg: '#F4EFE6', edge: '#D9D3C6', ink: '#1C1A22', muted: '#5A5866', faint: '#B9B3A6', plate: '#EBE5D8', accent: '#2443C4', brass: '#8A6200' },
-  dark: { bg: '#0A0C16', edge: '#232842', ink: '#F4EFE6', muted: '#9AA0B8', faint: '#3A3F5A', plate: '#11142A', accent: '#8FB0FF', brass: '#F2C86B' },
-};
+// Two looks share one layout:
+//   clean (live): Geist, rounded cards, hairlines, soft neutral surfaces.
+//   pixel: Doto, stepped pixel frames, brass studs, dotted rules.
+// Build the pixel look with `PROFILE_STYLE=pixel node scripts/build.mjs`; the workflow builds clean.
+const STYLE = process.env.PROFILE_STYLE === 'pixel' ? 'pixel' : 'clean';
+const PIXEL = STYLE === 'pixel';
+const caps = (s) => (PIXEL ? s.toUpperCase() : s); // display names: capitals in Doto, as written in Geist
+const ds = (n) => (PIXEL ? n : 0); // display letter spacing: Doto's dots want air, Geist doesn't
+
+const THEMES = PIXEL
+  ? {
+      // Paper and ink by day, indigo by night; cobalt and brass as the accents, matching the story.
+      light: { bg: '#F4EFE6', edge: '#D9D3C6', ink: '#1C1A22', muted: '#5A5866', faint: '#B9B3A6', plate: '#EBE5D8', accent: '#2443C4', brass: '#8A6200' },
+      dark: { bg: '#0A0C16', edge: '#232842', ink: '#F4EFE6', muted: '#9AA0B8', faint: '#3A3F5A', plate: '#11142A', accent: '#8FB0FF', brass: '#F2C86B' },
+    }
+  : {
+      // Soft neutral surfaces with hairline borders, after the Linear, Notion and Tailscale picks; cobalt kept.
+      light: { bg: '#FBFBFA', edge: '#E6E5E1', ink: '#18181B', muted: '#6B6A72', faint: '#C9C8C3', plate: '#F1F0EC', accent: '#2443C4', brass: '#8A6200' },
+      dark: { bg: '#12151C', edge: '#262B36', ink: '#EDEDEF', muted: '#9198A6', faint: '#3A404D', plate: '#1A1F29', accent: '#8FB0FF', brass: '#E2C27A' },
+    };
 
 // ---------------------------------------------------------------- data
 
@@ -209,11 +224,9 @@ async function fetchData(now) {
 
 // Doto (dot-matrix display) and Geist Mono (text and labels), both SIL Open Font License, instanced
 // and subset into assets/fonts. metrics.json holds their advance widths for layout.
-const FONT_FILES = {
-  display: 'doto-bold',
-  text: 'geist-mono',
-  label: 'geist-mono-semibold',
-};
+const FONT_FILES = PIXEL
+  ? { display: 'doto-bold', text: 'geist-mono', label: 'geist-mono-semibold' }
+  : { display: 'geist-semibold', text: 'geist-regular', label: 'geist-mono-semibold' };
 const fonts = {};
 let metrics;
 let icons;
@@ -278,36 +291,50 @@ const longDate = (iso) => { const d = new Date(iso); return `${d.getUTCDate()} $
 const PX = 6;
 
 function pixelShape(x, y, w, h, p, fill) {
+  if (!PIXEL) return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(14, Math.max(6, p * 2.2))}" fill="${fill}"/>`;
   const X = x + w, Y = y + h;
   return `<path d="M${x + 2 * p} ${y}H${X - 2 * p}V${y + p}H${X - p}V${y + 2 * p}H${X}V${Y - 2 * p}H${X - p}V${Y - p}H${X - 2 * p}V${Y}H${x + 2 * p}V${Y - p}H${x + p}V${Y - 2 * p}H${x}V${y + 2 * p}H${x + p}V${y + p}Z" fill="${fill}"/>`;
 }
 
 function frame(W, H, t, p = PX) {
+  if (!PIXEL) return `<rect x="0.75" y="0.75" width="${W - 1.5}" height="${H - 1.5}" rx="16" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>`;
   const stud = (x, y) => `<rect x="${x}" y="${y}" width="${p}" height="${p}" fill="${t.brass}"/>`;
   return `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
   ${stud(2 * p, 2 * p)}${stud(W - 3 * p, 2 * p)}${stud(2 * p, H - 3 * p)}${stud(W - 3 * p, H - 3 * p)}`;
 }
 
 function dotRule(x0, x1, y, t, size = 4, gap = 6) {
+  if (!PIXEL) return `<line x1="${r1(x0)}" y1="${r1(y) + 1}" x2="${r1(x1)}" y2="${r1(y) + 1}" stroke="${t.edge}" stroke-width="1.5"/>`;
   let out = '';
   for (let x = x0; x <= x1 - size; x += size + gap) out += `<rect x="${r1(x)}" y="${r1(y)}" width="${size}" height="${size}" fill="${t.edge}"/>`;
   return out;
 }
 
 function dotColumn(x, y0, y1, t, size = 4, gap = 6) {
+  if (!PIXEL) return `<line x1="${r1(x) + 1}" y1="${r1(y0)}" x2="${r1(x) + 1}" y2="${r1(y1)}" stroke="${t.edge}" stroke-width="1.5"/>`;
   let out = '';
   for (let y = y0; y <= y1 - size; y += size + gap) out += `<rect x="${r1(x)}" y="${r1(y)}" width="${size}" height="${size}" fill="${t.edge}"/>`;
   return out;
 }
 
-// A monogram on a cobalt pixel block.
+// A monogram: on a cobalt pixel block (pixel) or a soft rounded tile (clean).
 function badge(x, y, size, mark, t, p = 5) {
+  if (!PIXEL) {
+    const f = mark.length > 1 ? size * 0.4 : size * 0.48;
+    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${r1(size * 0.26)}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1.5"/>
+  ${text(mark, { font: 'display', size: r1(f), x: x + size / 2, y: y + size / 2 + f * 0.36, fill: t.accent, anchor: 'middle' })}`;
+  }
   const fs = mark.length > 1 ? size * 0.42 : size * 0.52;
   return `${pixelShape(x, y, size, size, p, t.accent)}
   ${text(mark, { font: 'display', size: r1(fs), x: x + size / 2, y: y + size / 2 + fs * 0.36, fill: t.bg, anchor: 'middle' })}`;
 }
 
 function pixelStar(x, y, s, fill) {
+  if (!PIXEL) {
+    const cx = x + 2.5 * s, cy = y + 2.6 * s, R = 2.6 * s, r = 1.1 * s;
+    const pts = Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r : R; return `${r1(cx + rr * Math.cos(a))},${r1(cy + rr * Math.sin(a))}`; }).join(' ');
+    return `<polygon points="${pts}" fill="${fill}" stroke-linejoin="round"/>`;
+  }
   const rows = ['..#..', '.###.', '#####', '.###.', '.#.#.'];
   let out = '';
   rows.forEach((row, j) => [...row].forEach((c, i) => { if (c === '#') out += `<rect x="${x + i * s}" y="${y + j * s}" width="${s}" height="${s}" fill="${fill}"/>`; }));
@@ -344,6 +371,10 @@ ${body}
 // Each is sized to its words and shown at a fixed height, so it stays the same size on a phone.
 const HEADING_H = 60;
 function heading(t, label) {
+  if (!PIXEL) {
+    const w = layout(label, 'display', 34).width;
+    return svg(Math.ceil(w + 6), HEADING_H, label, fontCss('display'), `${text(label, { font: 'display', size: 34, x: 0, y: HEADING_H / 2 + 12, fill: t.ink })}`);
+  }
   const size = 40, pad = 34;
   const w = layout(label, 'display', size, 1).width;
   const W = Math.ceil(pad + w + 6);
@@ -400,7 +431,7 @@ function ledger(t, calendar, dark) {
   return svg(
     W, H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 5)}
-  ${text(total, { font: 'display', size: 30, spacing: 1, x: pad, y: 52, fill: t.ink })}
+  ${text(total, { font: 'display', size: 30, spacing: ds(1), x: pad, y: 52, fill: t.ink })}
   ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 11.5, spacing: 2, x: pad + layout(total, 'display', 30, 1).width + 14, y: 50, fill: t.brass })}
   ${months}${dayLabels}${squares}
   ${text('github.com/obileonardo', { font: 'text', size: 11, x: pad, y: ly + 9, fill: t.accent })}
@@ -418,7 +449,7 @@ function yearTile(t, year, stats, calendar) {
   const rows = stats.map((s, i) => {
     const y = top + rowH * (i + 0.72);
     const sep = i ? dotRule(pad, W - pad, r1(top + rowH * i - 2), t, 2, 8) : '';
-    return `${sep}${text(fmt(s.value), { font: 'display', size: r1(size), spacing: 0.5, x: pad, y: r1(y), fill: t.ink })}
+    return `${sep}${text(fmt(s.value), { font: 'display', size: r1(size), spacing: ds(0.5), x: pad, y: r1(y), fill: t.ink })}
     ${text(s.label.toLowerCase(), { font: 'text', size: 13, x: W - pad, y: r1(y - 2), fill: t.muted, anchor: 'end' })}`;
   }).join('\n  ');
   const summary = stats.map((s) => `${fmt(s.value)} ${s.label.toLowerCase()}`).join(', ');
@@ -469,7 +500,7 @@ function armoury(t) {
 
 function projectCard(t, p, info) {
   const W = 320, H = 176, pad = 18, x = pad + 52;
-  const name = p.name.toUpperCase();
+  const name = caps(p.name);
   let ns = 18;
   while (ns > 13 && layout(name, 'display', ns, 0.5).width > W - x - pad) ns -= 0.5;
   const desc = wrapText(p.short ?? p.what, 'text', 13, W - 2 * pad).slice(0, 2);
@@ -486,7 +517,7 @@ function projectCard(t, p, info) {
     W, H, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
   ${badge(pad, pad, 40, p.mark ?? p.name[0], t, 4)}
-  ${text(name, { font: 'display', size: r1(ns), spacing: 0.5, x, y: pad + 17, fill: t.ink })}
+  ${text(name, { font: 'display', size: r1(ns), spacing: ds(0.5), x, y: pad + 17, fill: t.ink })}
   ${text(`→ ${p.get.label.toUpperCase()}`, { font: 'label', size: 10.5, spacing: 1.4, x, y: pad + 36, fill: t.accent })}
   ${desc.map((l, i) => text(l, { font: 'text', size: 13, x: pad, y: 90 + i * 18, fill: t.muted })).join('\n  ')}
   ${dotRule(pad, W - pad, 132, t, 3, 7)}
@@ -511,7 +542,7 @@ function timeline(t) {
     const x = x0 + i * stepX, above = i % 2 === 0;
     parts.push(`<rect x="${x - 1}" y="${lineY - 9}" width="8" height="16" fill="${i === blocks.length - 1 ? t.accent : t.brass}"/>`);
     const lines = [
-      ['year', String(b.c.since)], ['role', b.c.role.toUpperCase()], ['house', b.c.house], ...b.field.map((f) => ['field', f]),
+      ['year', String(b.c.since)], ['role', caps(b.c.role)], ['house', b.c.house], ...b.field.map((f) => ['field', f]),
     ];
     const order = above ? [lines[1], lines[2], ...lines.slice(3), lines[0]] : lines;
     let y = above ? lineY - 14 - blockH(b) : lineY + 16;
@@ -520,8 +551,8 @@ function timeline(t) {
       y += h;
       const base = y - (kind === 'year' ? 4 : 5);
       const st = {
-        year: { font: 'display', size: 24, spacing: 1, fill: t.brass },
-        role: { font: 'display', size: 15, spacing: 0.6, fill: t.ink },
+        year: { font: 'display', size: 24, spacing: ds(1), fill: t.brass },
+        role: { font: 'display', size: 15, spacing: ds(0.6), fill: t.ink },
         house: { font: 'text', size: 13, fill: b.c.url ? t.accent : t.muted },
         field: { font: 'text', size: 12.5, fill: t.muted },
       }[kind];
@@ -538,7 +569,7 @@ function timeline(t) {
 
 function dispatchRow(t, r) {
   const W = 1000, H = 54, p = 3;
-  const name = r.project.toUpperCase();
+  const name = caps(r.project);
   const nameW = layout(name, 'display', 17, 0.6).width;
   const date = r.publishedAt.slice(0, 10);
   return svg(
@@ -546,7 +577,7 @@ function dispatchRow(t, r) {
     `${pixelShape(0, 0, W, H, p, t.edge)}${pixelShape(p, p, W - 2 * p, H - 2 * p, p, t.bg)}
   ${text(date, { font: 'text', size: 15, x: 24, y: 33, fill: t.muted })}
   ${badge(150, 12, 30, r.mark ?? r.project[0], t, 3)}
-  ${text(name, { font: 'display', size: 17, spacing: 0.6, x: 194, y: 33, fill: t.ink })}
+  ${text(name, { font: 'display', size: 17, spacing: ds(0.6), x: 194, y: 33, fill: t.ink })}
   ${text(r.tagName, { font: 'text', size: 15, x: 194 + nameW + 14, y: 33, fill: t.brass })}
   ${text('release notes →', { font: 'text', size: 13, x: W - 24, y: 32, fill: t.accent, anchor: 'end' })}`,
   );
@@ -568,7 +599,7 @@ function seal(t, s) {
     `${frame(W, H, t, 4)}
   ${badge(pad, pad, 34, s.mark, t, 4)}
   ${text('→', { font: 'text', size: 22, x: W - pad, y: pad + 24, fill: t.accent, anchor: 'end' })}
-  ${text(s.label.toUpperCase(), { font: 'display', size: s.label.length > 10 ? 15 : 18, spacing: 0.6, x: pad, y: 98, fill: t.ink })}
+  ${text(caps(s.label), { font: 'display', size: s.label.length > 10 ? 15 : 18, spacing: ds(0.6), x: pad, y: 98, fill: t.ink })}
   ${text(s.handle, { font: 'text', size: r1(hs), x: pad, y: 124, fill: t.muted })}`,
   );
 }
@@ -634,7 +665,7 @@ async function main() {
   // Hold the Keep: the board as it stands. Moves themselves are played by scripts/keep/play.mjs.
   const state = await loadState();
   files.set('game/state.json', `${JSON.stringify(state, null, 1)}\n`);
-  const keep = keepBoard(state, THEMES, { text, layout, fontCss, svg, frame, dotRule, pixelStar, wrapText });
+  const keep = keepBoard(state, THEMES, { text, layout, fontCss, svg, frame, dotRule, pixelStar, wrapText, style: STYLE });
   for (const [rel, content] of keep.files) files.set(rel, content);
 
   const readme = template
@@ -656,7 +687,7 @@ async function main() {
   console.log(`Built ${files.size} files. ${data.stats.map((s) => `${s.label}: ${s.value}`).join(', ')}`);
 }
 
-export { PROJECTS, THEMES, fetchData, loadFonts, layout, text, fontCss, svg, esc, r1, roman, longDate, fmt, frame, dotRule, pixelStar, wrapText };
+export { STYLE, PROJECTS, THEMES, fetchData, loadFonts, layout, text, fontCss, svg, esc, r1, roman, longDate, fmt, frame, dotRule, pixelStar, wrapText };
 
 // Run only when executed directly, so other scripts can import the helpers.
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
