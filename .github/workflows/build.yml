@@ -1,12 +1,14 @@
 name: Build profile
 
-# Rebuilds README.md and the artwork in assets/ from live GitHub data.
-# Commits only when something actually changed.
+# Rebuilds README.md and the artwork in assets/ from live GitHub data, and plays the moves of
+# Hold the Keep. Commits only when something actually changed.
 on:
   schedule:
     - cron: '17 4 * * *' # daily, 04:17 UTC: everything
     - cron: '41 * * * *' # hourly: new releases and stars (skips the year-in-review card)
   workflow_dispatch:
+  issues:
+    types: [opened] # a move in Hold the Keep
   push:
     branches: [main]
     paths:
@@ -17,24 +19,37 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
+# One run at a time, so moves and rebuilds never race each other for the README. GitHub keeps only
+# the newest pending run and cancels older pending ones; that loses runs, never moves, because every
+# run plays all open move issues.
 concurrency:
   group: build-profile
   cancel-in-progress: false
 
 jobs:
   build:
+    # Issues that aren't moves don't need a run. startsWith ignores case.
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, 'keep')
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      KEEP_OUTBOX: ${{ runner.temp }}/keep-outbox.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Test the game rules
+        if: github.event_name != 'issues'
+        run: node --test scripts/keep/*.test.mjs
+      - name: Play open moves
+        run: node scripts/keep/play.mjs
       - name: Build
+        if: github.event_name != 'issues'
         run: node scripts/build.mjs ${{ github.event.schedule == '41 * * * *' && '--hourly' || '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit changes
         run: |
           if [ -z "$(git status --porcelain)" ]; then
@@ -43,7 +58,11 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md assets
-          git commit -m "Refresh profile data"
+          git add README.md assets game
+          if [ "$GITHUB_EVENT_NAME" = issues ]; then msg="Play moves in Hold the Keep"; else msg="Refresh profile data"; fi
+          git commit -m "$msg"
           git pull --rebase
           git push
+      # Only after the push, so a failed run leaves its issues open to be played again.
+      - name: Reply to players
+        run: node scripts/keep/play.mjs --reply

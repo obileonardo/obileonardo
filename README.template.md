@@ -1,15 +1,23 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
-  <img alt="Elvis Obi Leonard, Design Engineer. The Medieval Artisan, Nairobi, Kenya." src="assets/banner-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/story-place-global-night.webp">
+  <img alt="Pixel animation: one riverside street from 1450 to 2026. Timber workshops and a printing press give way to windmills, a steam engine, mills, railways, electric light, cars and planes, office towers and finally glass towers, wind turbines and delivery drones. A drone flies into a doorway of light and the story begins again." src="assets/story-place-global-day.webp" width="100%">
 </picture>
 
-### Hail, traveller. I'm Elvis.
+### Hail, traveller. I'm Elvis
 
 I'm a Design Engineer and I've been designing products since 2019. I co-founded [FiveBlooded](https://x.com/FiveBlooded), the studio building [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game. I also founded [Halfwings](https://x.com/HalfwingsInc), the software and hardware development partner for technology businesses. Figma featured my work at [Config 2022](https://www.youtube.com/watch?v=JUTFghsG8nI), and I've [mentored 500+ design students](https://adplist.org/mentors/elvis-obi) across multiple platforms. Based in Nairobi, Kenya.
+
+#### ❦ The Ledger
+
+<a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.svg" width="100%"></picture></a>
 
 #### ❦ The Arsenal
 
 {{ARSENAL}}
+
+#### ❦ Hold the Keep
+
+{{KEEP}}
 
 #### ❦ The Armoury
 
@@ -20,13 +28,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 #### ❦ The Chronicle
 
-| Role | House | Field | Since |
-| --- | --- | --- | --- |
-| **Founder** | [Halfwings](https://x.com/HalfwingsInc) | Software and hardware development for technology businesses | 2026 |
-| **Co-founder** | [FiveBlooded](https://x.com/FiveBlooded) | Games: Mazerance | 2025 |
-| **Design Engineer** | Independent | Products, brands and websites | 2019 |
-| **Top Creator & Designer** | [Figma Config](https://www.youtube.com/watch?v=JUTFghsG8nI) | Recognised at the opening keynote, one of ~60 worldwide | 2022 |
-| **Mentor** | [ADPList](https://adplist.org/mentors/elvis-obi) and other platforms | 500+ design students | 2022 |
+{{CHRONICLE}}
 
 #### ❦ Year in Review
 
@@ -43,6 +45,3 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 {{SEALS}}
 
-<p align="center">
-  <a href="https://elvisobi.com">elvisobi.com</a> · <a href="https://x.com/TheObiLeonard">X</a> · <a href="https://www.linkedin.com/in/elvisobi">LinkedIn</a> · <a href="https://contra.com/elvisobi">Contra</a> · <a href="mailto:contact@elvisobi.com">contact@elvisobi.com</a>
-</p>
