@@ -1,0 +1,55 @@
+{
+ "version": 1,
+ "age": 1,
+ "startedAt": "2026-11-01T19:21:09.881Z",
+ "cells": {
+  "D4": {
+   "kind": "keep",
+   "hp": 5
+  },
+  "C3": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "D3": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "E3": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "C4": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "E4": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "C5": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "D5": {
+   "kind": "stone",
+   "hp": 2
+  },
+  "E5": {
+   "kind": "stone",
+   "hp": 2
+  }
+ },
+ "bellows": [],
+ "weapons": [],
+ "tally": {
+  "stones": 0,
+  "forged": 0,
+  "shots": 0,
+  "repelled": 0
+ },
+ "players": {},
+ "deeds": [],
+ "ages": [],
+ "seen": []
+}
