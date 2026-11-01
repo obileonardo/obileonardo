@@ -394,8 +394,13 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g
 
 const LEVELS = ['NONE', 'FIRST_QUARTILE', 'SECOND_QUARTILE', 'THIRD_QUARTILE', 'FOURTH_QUARTILE'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const LEDGER_PCT = 63, YEAR_PCT = 35;
-const L = { cell: 11, gap: 3, pad: 26, days: 50, top: 110, foot: 62 };
+// Rows of cards side by side share one gap, drawn as a transparent margin inside each card (GitHub's word
+// spacing varies), so every row lines up with both edges of the column like the full-width rows do.
+const GAP = 1.6; // % of the column
+const LEDGER_PCT = 72, YEAR_PCT = 100 - LEDGER_PCT - GAP;
+const cols = (n) => (100 - (n - 1) * GAP) / n; // width of each card in a row of n
+const pct = (n) => `${Math.floor(n * 1000 + 1e-6) / 1000}%`; // floor, so a row never sums past 100% and wraps
+const L = { cell: 12, gap: 3, vgap: 5, pad: 26, days: 50, top: 122, foot: 72 };
 
 function levelColours(t, dark) {
   const ramp = dark ? [0.22, 0.42, 0.66, 1] : [0.22, 0.45, 0.72, 1];
@@ -405,12 +410,14 @@ function levelColours(t, dark) {
 
 function ledgerSize(calendar) {
   const step = L.cell + L.gap;
-  return { W: L.pad + L.days + calendar.weeks.length * step - L.gap + L.pad, H: L.top + 7 * step - L.gap + L.foot };
+  return { W: L.pad + L.days + calendar.weeks.length * step - L.gap + L.pad, H: L.top + 7 * (L.cell + L.vgap) - L.vgap + L.foot };
 }
 
 function ledger(t, calendar, dark) {
+  const { W: LW } = ledgerSize(calendar);
+  const mr = (LW * GAP) / LEDGER_PCT;
   const { cell, gap, pad, days: dw, top } = L;
-  const step = cell + gap, left = pad + dw;
+  const step = cell + gap, vstep = cell + L.vgap, left = pad + dw;
   const { W, H } = ledgerSize(calendar);
   const colours = levelColours(t, dark);
   let squares = '', months = '', lastMonth = -1;
@@ -419,18 +426,18 @@ function ledger(t, calendar, dark) {
     w.contributionDays.forEach((d) => {
       const day = new Date(`${d.date}T00:00:00Z`).getUTCDay();
       const lvl = Math.max(0, LEVELS.indexOf(d.contributionLevel));
-      squares += `<rect x="${x}" y="${top + day * step}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
+      squares += `<rect x="${x}" y="${top + day * vstep}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${colours[lvl]}"><title>${d.contributionCount} on ${d.date}</title></rect>`;
     });
     const m = new Date(`${w.contributionDays[0].date}T00:00:00Z`).getUTCMonth();
     if (m !== lastMonth && i < calendar.weeks.length - 2) { months += text(SHORT_MONTHS[m], { font: 'text', size: 18, x, y: top - 12, fill: t.muted }); lastMonth = m; }
   });
-  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 18, x: pad, y: top + d * step + 12, fill: t.muted })).join('');
-  const ly = top + 7 * step + 22;
+  const dayLabels = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) => text(l, { font: 'text', size: 18, x: pad, y: top + d * vstep + 12, fill: t.muted })).join('');
+  const ly = top + 7 * vstep + 26;
   const lx = W - pad - 5 * step - 46;
   const legend = `${text('Less', { font: 'text', size: 18, x: lx - 8, y: ly + 11, fill: t.muted, anchor: 'end' })}${colours.map((c, i) => `<rect x="${lx + i * step}" y="${ly}" width="${cell}" height="${cell}" rx="${PIXEL ? 1.5 : 0}" fill="${c}"/>`).join('')}${text('More', { font: 'text', size: 18, x: lx + 5 * step + 3, y: ly + 9, fill: t.muted })}`;
   const total = fmt(calendar.totalContributions);
   return svg(
-    W, H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
+    W + mr, H, `${total} contributions in the last year.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 5)}
   ${text(total, { font: 'display', size: 34, spacing: ds(1), x: pad, y: 56, fill: t.ink })}
   ${text('CONTRIBUTIONS IN THE LAST YEAR', { font: 'label', size: 17, spacing: 2, x: pad + layout(total, 'display', 34, ds(1)).width + 16, y: 54, fill: t.brass })}
@@ -443,7 +450,7 @@ function ledger(t, calendar, dark) {
 // The year's numbers, quietly: a small label, then one line per figure.
 function yearTile(t, year, stats, calendar) {
   const lg = ledgerSize(calendar);
-  const W = 460, H = Math.round((lg.H / lg.W) * (LEDGER_PCT / YEAR_PCT) * W);
+  const W = 340, H = Math.round((lg.H / lg.W) * (LEDGER_PCT / YEAR_PCT) * W);
   const pad = 30, top = 78;
   const rowH = (H - top - 18) / stats.length;
   const size = Math.min(30, rowH * 0.66);
@@ -500,8 +507,9 @@ function armoury(t) {
 
 // ---------------------------------------------------------------- the arsenal: small project cards
 
-function projectCard(t, p, info) {
+function projectCard(t, p, info, { right = 0, below = 0 } = {}) {
   const W = 320, H = 192, pad = 18, x = pad + 52;
+  const unit = W / cols(3), mr = right ? GAP * unit : 0, mb = below ? GAP * unit * 0.6 : 0;
   const name = caps(p.name);
   let ns = 18;
   while (ns > 13 && layout(name, 'display', ns, 0.5).width > W - x - pad) ns -= 0.5;
@@ -516,7 +524,7 @@ function projectCard(t, p, info) {
     standing = text(p.standing ?? '', { font: 'text', size: 14, x: W - pad, y: 172, fill: t.muted, anchor: 'end' });
   }
   return svg(
-    W, H, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
+    W + mr, H + mb, `${p.name}: ${p.what} Built with ${p.built}. ${p.get.label}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
   ${badge(pad, pad, 40, p.mark ?? p.name[0], t, 4)}
   ${text(name, { font: 'display', size: r1(ns), spacing: ds(0.5), x, y: pad + 17, fill: t.ink })}
@@ -592,16 +600,19 @@ function dispatchAlt(list) {
 
 // ---------------------------------------------------------------- elsewhere: link cards
 
-function seal(t, s) {
+function seal(t, s, { right = 0 } = {}) {
   const W = 220, H = 150, pad = 18;
+  const mr = right ? (GAP * W) / cols(SEALS.length) : 0;
   let hs = 16;
   while (hs > 12 && layout(s.handle, 'text', hs).width > W - 2 * pad) hs -= 0.5;
+  let ls = 18; // the title shrinks only when it would not fit
+  while (ls > 13 && layout(caps(s.label), 'display', ls, ds(0.6)).width > W - 2 * pad) ls -= 0.5;
   return svg(
-    W, H, s.alt, fontCss('display', 'text', 'label'),
+    W + mr, H, s.alt, fontCss('display', 'text', 'label'),
     `${frame(W, H, t, 4)}
   ${badge(pad, pad, 34, s.mark, t, 4)}
   ${text('→', { font: 'text', size: 22, x: W - pad, y: pad + 24, fill: t.accent, anchor: 'end' })}
-  ${text(caps(s.label), { font: 'display', size: s.label.length > 10 ? 15 : 18, spacing: ds(0.6), x: pad, y: 98, fill: t.ink })}
+  ${text(caps(s.label), { font: 'display', size: r1(ls), spacing: ds(0.6), x: pad, y: 98, fill: t.ink })}
   ${text(s.handle, { font: 'text', size: r1(hs), x: pad, y: 128, fill: t.muted })}`,
   );
 }
@@ -615,11 +626,14 @@ function picture(base, alt, attrs = 'width="100%"') {
 const linked = (href, inner) => (href ? `<a href="${esc(href)}">${inner}</a>` : inner);
 
 function ledgerBand() {
-  return `<p>${linked('https://github.com/obileonardo?tab=repositories', picture('assets/ledger', 'Contribution chart: a year of contributions, one square per day, brighter for busier days.', `width="${LEDGER_PCT}%"`))} ${picture('assets/year', "This year's numbers: contributions, commits, pull requests, releases and stars.", `width="${YEAR_PCT}%"`)}</p>`;
+  return `<p>${linked('https://github.com/obileonardo?tab=repositories', picture('assets/ledger', 'Contribution chart: a year of contributions, one square per day, brighter for busier days.', `width="${pct(LEDGER_PCT + GAP)}"`))}${picture('assets/year', "This year's numbers: contributions, commits, pull requests, releases and stars.", `width="${pct(YEAR_PCT)}"`)}</p>`;
 }
 
 function arsenal() {
-  return `<p>\n${PROJECTS.map((p) => linked(p.get.url, picture(`assets/arsenal/${slug(p.name)}`, `${p.name}: ${p.what}`, 'width="32%"'))).join('\n')}\n</p>`;
+  const card = (p, i) => linked(p.get.url, picture(`assets/arsenal/${slug(p.name)}`, `${p.name}: ${p.what}`, `width="${pct(cols(3) + (i % 3 < 2 ? GAP : 0))}"`));
+  const rows = [];
+  for (let i = 0; i < PROJECTS.length; i += 3) rows.push(PROJECTS.slice(i, i + 3).map((p, k) => card(p, i + k)).join(''));
+  return `<p>\n${rows.join('<br>\n')}\n</p>`;
 }
 
 function chronicle() {
@@ -637,7 +651,7 @@ function headingPicture(h) {
 }
 
 function seals() {
-  return `<p align="center">\n${SEALS.map((s) => linked(s.url, picture(`assets/seals/${s.id}`, s.alt, 'width="18.6%"'))).join('\n')}\n</p>`;
+  return `<p>\n${SEALS.map((s, i) => linked(s.url, picture(`assets/seals/${s.id}`, s.alt, `width="${pct(cols(SEALS.length) + (i < SEALS.length - 1 ? GAP : 0))}"`))).join('')}\n</p>`;
 }
 
 // ---------------------------------------------------------------- main
@@ -658,10 +672,10 @@ async function main() {
     if (!HOURLY) files.set(`assets/year-${name}.svg`, yearTile(t, data.year, data.stats, data.calendar));
     if (!HOURLY) files.set(`assets/ledger-${name}.svg`, ledger(t, data.calendar, name === 'dark'));
     data.dispatches.forEach((r, i) => files.set(`assets/dispatches/${i}-${name}.svg`, dispatchRow(t, r)));
-    for (const p of PROJECTS) files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectCard(t, p, p.repo ? data.repoInfo.get(p.repo) : null));
+    PROJECTS.forEach((p, i) => files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectCard(t, p, p.repo ? data.repoInfo.get(p.repo) : null, { right: i % 3 < 2, below: i < PROJECTS.length - 3 })));
     files.set(`assets/chronicle-${name}.svg`, timeline(t));
     files.set(`assets/armoury-${name}.svg`, armoury(t));
-    for (const s of SEALS) files.set(`assets/seals/${s.id}-${name}.svg`, seal(t, s));
+    SEALS.forEach((s, i) => files.set(`assets/seals/${s.id}-${name}.svg`, seal(t, s, { right: i < SEALS.length - 1 })));
   }
 
   // Hold the Keep: the board as it stands. Moves themselves are played by scripts/keep/play.mjs.
