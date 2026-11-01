@@ -65,7 +65,7 @@ function dots(t, cells) {
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
       const c = cells[y][x];
-      out += `<rect x="${x * 10 + 1.5}" y="${y * 10 + 1.5}" width="7" height="7" rx="${CLEAN ? 2.6 : 1}" fill="${c === '.' ? off : colour[c]}"/>`;
+      out += `<rect x="${x * 10 + 1.5}" y="${y * 10 + 1.5}" width="7" height="7" rx="${CLEAN ? 0 : 1}" fill="${c === '.' ? off : colour[c]}"/>`;
     }
   }
   return out;
@@ -142,14 +142,15 @@ function forgeBarSvg(s, t, type) {
   const { text } = type;
   const bellows = s.bellows.length ? `In the bellows: ${s.bellows.join(' + ')}` : 'The bellows are cold';
   const left = 3 - s.bellows.length;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100" viewBox="0 0 400 100" role="img" aria-label="The forge. ${bellows}."><style>${type.fontCss('display', 'text', 'label')}</style>${tileFrame(400, t)}
-  ${text('THE FORGE', { font: 'label', size: 13, spacing: 2.4, x: 22, y: 36, fill: t.brass })}
-  ${text(bellows, { font: 'text', size: 17, x: 22, y: 61, fill: t.ink })}
-  ${text(`${left} more ${left === 1 ? 'material forges' : 'materials forge'} a weapon →`, { font: 'text', size: 13, x: 22, y: 82, fill: t.muted })}</svg>\n`;
+  // The card stops 16 units short of its box, leaving a clear gap before the three materials.
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100" viewBox="0 0 400 100" role="img" aria-label="The forge. ${bellows}."><style>${type.fontCss('display', 'text', 'label')}</style>${tileFrame(384, t)}
+  ${text('THE FORGE', { font: 'label', size: 16, spacing: 2.4, x: 22, y: 33, fill: t.brass })}
+  ${text(bellows, { font: 'text', size: 21, x: 22, y: 61, fill: t.ink })}
+  ${text(`${left} more ${left === 1 ? 'material forges' : 'materials forge'} a weapon →`, { font: 'text', size: 17.5, x: 22, y: 85, fill: t.muted })}</svg>\n`;
 }
 
 function tileFrame(w, t) {
-  return CLEAN ? `<rect x="2" y="2" width="${w - 4}" height="96" rx="12" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>` : `<rect x="2" y="2" width="${w - 4}" height="96" rx="6" fill="${t.bg}"/>`;
+  return CLEAN ? `<rect x="2" y="2" width="${w - 4}" height="96" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>` : `<rect x="2" y="2" width="${w - 4}" height="96" rx="6" fill="${t.bg}"/>`;
 }
 
 // ---------------------------------------------------------------- clean tiles
@@ -170,7 +171,7 @@ function cleanBody(key, t) {
   }
   if (kind === 'k') {
     const hp = Number(key[1]);
-    out.push(`<rect x="22" y="22" width="56" height="56" rx="12" fill="${t.plate}" stroke="${t.ink}" stroke-width="3"/>`);
+    out.push(`<rect x="22" y="22" width="56" height="56" fill="${t.plate}" stroke="${t.ink}" stroke-width="3"/>`);
     out.push(`<path d="M35 55V38L43 46L50 34L57 46L65 38V55Z" fill="${t.ink}" stroke="${t.ink}" stroke-width="2.5" stroke-linejoin="round"/>`);
     for (let i = 0; i < KEEP_HP; i++) out.push(`<circle cx="${34 + i * 8}" cy="66" r="2.8" fill="${i < hp ? t.accent : t.faint}"/>`);
     if (key.includes('x')) out.push(corners(t.accent));
@@ -189,7 +190,7 @@ function cleanBody(key, t) {
     out.push(`<circle cx="50" cy="50" r="27" fill="${fill}"/><circle cx="50" cy="50" r="27" fill="none" stroke="${t.ink}" stroke-width="3"/>`);
     out.push(`<circle cx="50" cy="50" r="11" fill="${role === 'a' ? t.brass : t.bg}"/>`);
   } else {
-    out.push(`<rect x="24" y="24" width="52" height="52" rx="10" fill="${fill}" stroke="${t.ink}" stroke-width="3"/>`);
+    out.push(`<rect x="24" y="24" width="52" height="52" fill="${fill}" stroke="${t.ink}" stroke-width="3"/>`);
     out.push(`<path d="M27 50H73M50 27V50M38 50V73M62 50V73" stroke="${t.bg}" stroke-width="2" opacity=".55"/>`);
   }
   if (/g/.test(key.slice(1)) && role !== 'a') out.push(`<circle cx="78" cy="22" r="5" fill="${t.brass}"/>`);
@@ -201,7 +202,7 @@ function cleanBody(key, t) {
 function cleanForge(material, lit, t) {
   const f = lit ? t.brass : t.muted, s = t.ink;
   return {
-    iron: `<path d="M24 66L33 40H67L76 66Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/>`,
+    iron: `<path d="M24 63L33 37H67L76 63Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/>`,
     ember: `<path d="M50 22C59 34 70 42 66 58C63 70 55 76 50 76C42 76 33 69 33 58C33 48 41 44 42 34C47 40 47 46 50 48C52 40 52 30 50 22Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/><path d="M50 72C46 72 43 68 44 63C45 58 49 57 50 52C54 58 57 62 56 67C55 70 52 72 50 72Z" fill="${t.brass}"/>`,
     rune: `<path d="M50 20L77 50L50 80L23 50Z" fill="${f}" stroke="${s}" stroke-width="3" stroke-linejoin="round"/><path d="M50 34V66M50 44L59 37M50 54L41 47" stroke="${t.bg}" stroke-width="3" stroke-linecap="round" fill="none"/>`,
   }[material];
@@ -228,70 +229,72 @@ function panelSvg(s, t, type) {
   const waiting = s.weapons.length - armed.size;
   const walls = [...mounted, waiting ? `${waiting} waiting for a tower` : ''].filter(Boolean).join(' · ') || 'none yet';
   const bellows = s.bellows.length ? s.bellows.join(' + ') : 'cold';
-  const label = (str, x, y, fill = t.muted, anchor = 'start') => text(str.toUpperCase(), { font: 'label', size: 12.5, spacing: 2, x, y, fill, anchor });
+  const label = (str, x, y, fill = t.muted, anchor = 'start') => text(str.toUpperCase(), { font: 'label', size: 15.5, spacing: 2, x, y, fill, anchor });
   const body = (str, x, y, fill = t.ink, anchor = 'start', size = 16) => text(str, { font: 'text', size, x, y, fill, anchor });
   const parts = [];
   let y = 58;
   parts.push(text(CLEAN ? `The ${ordinal(s.age)} Age` : `THE ${ordinal(s.age).toUpperCase()} AGE`, { font: 'display', size: 32, spacing: CLEAN ? 0 : 1, x: pad, y, fill: t.ink }));
   y += 26; parts.push(label(`since ${day(s.startedAt)}`, pad, y, t.brass));
   y += 18; parts.push(dotRule(pad, W - pad, y, t));
-  y += 36;
-  const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + 120 + i * 22}" y="${y - 14}" width="15" height="15" rx="${CLEAN ? 4 : 0}" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
+  y += 32;
+  const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + 120 + i * 24}" y="${y - 14}" width="15" height="15" rx="${CLEAN ? 0 : 0}" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
   parts.push(label('Keep', pad, y), pips, label('Stones', pad + 270, y), body(String(countStones(s)), W - pad, y + 1, t.ink, 'end'));
   y += 32; parts.push(label('On the walls', pad, y));
-  const wl = wrapText(walls, 'text', 15, inner);
-  wl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * 22, walls === 'none yet' ? t.muted : t.ink, 'start', 15)));
+  const wl = wrapText(walls, 'text', 17, inner);
+  wl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * 24, walls === 'none yet' ? t.muted : t.ink, 'start', 17)));
   y += 26 + 22 * wl.length;
   parts.push(dotRule(pad, W - pad, y, t));
-  y += 34; parts.push(label('Recent deeds', pad, y));
-  const deeds = s.deeds.slice(0, 4);
+  y += 30; parts.push(label('Recent deeds', pad, y));
+  const deeds = s.deeds.slice(0, 3);
   y += 26;
-  if (!deeds.length) { parts.push(body('No deeds yet. Lay the first stone.', pad, y, t.muted, 'start', 15)); y += 22; }
+  if (!deeds.length) { parts.push(body('No deeds yet. Lay the first stone.', pad, y, t.muted, 'start', 17)); y += 24; }
   for (const d of deeds) {
-    const lines = wrapText(`@${d.user} ${d.deed}`, 'text', 15, inner);
+    const lines = wrapText(`@${d.user} ${d.deed}`, 'text', 17, inner);
     lines.forEach((l, i) => {
       if (i === 0) {
         const at = `@${d.user}`;
-        parts.push(body(at, pad, y, t.accent, 'start', 15));
-        parts.push(body(l.slice(at.length).trimStart(), pad + layout(`${at} `, 'text', 15).width, y, t.ink, 'start', 15));
-      } else parts.push(body(l, pad, y, t.ink, 'start', 15));
-      y += 22;
+        parts.push(body(at, pad, y, t.accent, 'start', 17));
+        parts.push(body(l.slice(at.length).trimStart(), pad + layout(`${at} `, 'text', 17).width, y, t.ink, 'start', 17));
+      } else parts.push(body(l, pad, y, t.ink, 'start', 17));
+      y += 24;
     });
   }
   y += 4; parts.push(dotRule(pad, W - pad, y, t));
   // The ranking: everyone by moves made, with what they did.
-  y += 34; parts.push(label('Ranking', pad, y, t.brass), label('built · forged · fired', W - pad, y, t.muted, 'end'));
+  y += 30; parts.push(label('Ranking', pad, y, t.brass), label('built · forged · fired', W - pad, y, t.muted, 'end'));
   const ranked = Object.entries(s.players).map(([u, pl]) => [u, pl, pl.built + pl.forged + pl.fired]).filter(([, , n]) => n > 0)
-    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0])).slice(0, 6);
+    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0])).slice(0, 4);
   y += 30;
-  if (!ranked.length) { parts.push(body('No one yet. Be the first.', pad, y, t.muted, 'start', 15)); y += 26; }
+  if (!ranked.length) { parts.push(body('No one yet. Be the first.', pad, y, t.muted, 'start', 17)); y += 26; }
   ranked.forEach(([u, pl], i) => {
     parts.push(text(String(i + 1).padStart(2, '0'), { font: 'display', size: 18, x: pad, y, fill: i === 0 ? t.brass : t.muted }));
-    parts.push(body(`@${u}`, pad + 44, y, t.ink, 'start', 15));
-    parts.push(body(`${pl.built} · ${pl.forged} · ${pl.fired}`, W - pad, y, t.muted, 'end', 14));
+    parts.push(body(`@${u}`, pad + 44, y, t.ink, 'start', 17));
+    parts.push(body(`${pl.built} · ${pl.forged} · ${pl.fired}`, W - pad, y, t.muted, 'end', 16));
     y += 28;
   });
   y += 2; parts.push(dotRule(pad, W - pad, y, t));
-  y += 34; parts.push(label('Chronicle', pad, y));
+  y += 30; parts.push(label('Chronicle', pad, y));
   const fallen = s.ages[0];
   const chron = fallen ? `The ${ordinal(fallen.age)} Age stood ${duration(fallen.startedAt, fallen.endedAt)}: ${fallen.stones} stones, ${fallen.forged} weapons, breached by @${fallen.fellTo}.` : 'No castle has fallen yet.';
-  const cl = wrapText(chron, 'text', 15, inner);
-  cl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * 22, fallen ? t.ink : t.muted, 'start', 15)));
+  const cl = wrapText(chron, 'text', 17, inner);
+  cl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * 24, fallen ? t.ink : t.muted, 'start', 17)));
   y += 26 + 22 * cl.length;
   // A legend for the board's marks, with the tiles themselves in miniature.
   y += 6; parts.push(dotRule(pad, W - pad, y, t));
-  y += 34; parts.push(label('Reading the board', pad, y));
+  y += 30; parts.push(label('Reading the board', pad, y));
   y += 16;
-  for (const [key, words] of [['e1', 'Open ground: click to build'], ['s2-0x', 'Blue corners: click to fire'], ['s2a-f', 'Brass core: a tower with a weapon'],
-    ['s1-0', 'Brass crack: one more hit breaks it'], ['k5', 'The keep: when it falls, a new age']]) {
-    parts.push(`<g transform="translate(${pad} ${y}) scale(0.3)"><rect width="100" height="100" rx="${CLEAN ? 18 : 10}" fill="${t.plate}"/>${CLEAN ? cleanBody(key, t) : dots(t, tileCells(key))}</g>`);
-    parts.push(body(words, pad + 44, y + 21, t.ink, 'start', 15));
-    y += 38;
-  }
+  // Two columns, so the legend costs three rows, not five.
+  const legend = [['e1', 'Build here'], ['s2-0x', 'Fire here'], ['s2a-f', 'Armed tower'], ['s1-0', 'Cracked: one more hit'], ['k5', 'The keep']];
+  legend.forEach(([key, words], i) => {
+    const lx = pad + (i % 2) * (inner / 2), ly = y + Math.floor(i / 2) * 36;
+    parts.push(`<g transform="translate(${lx} ${ly}) scale(0.3)"><rect width="100" height="100" rx="${CLEAN ? 0 : 10}" fill="${t.plate}"/>${CLEAN ? cleanBody(key, t) : dots(t, tileCells(key))}</g>`);
+    parts.push(body(words, lx + 42, ly + 21, t.ink, 'start', 16.5));
+  });
+  y += Math.ceil(legend.length / 2) * 36 - 4;
   const howY = Math.max(y + 34, PANEL_H - 62);
   parts.push(dotRule(pad, W - pad, howY - 30, t));
-  wrapText('Every click opens an issue; press Create and the castle updates in about a minute. One move every 10 minutes.', 'text', 13.5, inner)
-    .forEach((l, i) => parts.push(body(l, pad, howY + i * 20, t.muted, 'start', 13.5)));
+  wrapText('Every click opens an issue; press Create and the castle updates in about a minute. One move every 10 minutes.', 'text', 15.5, inner)
+    .forEach((l, i) => parts.push(body(l, pad, howY + i * 22, t.muted, 'start', 15.5)));
   const H = Math.max(PANEL_H, howY + 2 * 20 + 18);
   const alt = `Hold the Keep. The ${ordinal(s.age)} Age. Keep ${keep.hp} of ${KEEP_HP}. ${countStones(s)} stones. On the walls: ${walls}. Bellows: ${bellows}. ${deeds.map((d) => `@${d.user} ${d.deed}`).join('. ')}. ${chron}`;
   return svg(W, H, alt, fontCss('display', 'text', 'label'), `${frame(W, H, t)}\n  ${parts.join('\n  ')}`);
@@ -365,13 +368,25 @@ ${picture(bar, `The forge. ${s.bellows.length ? `In the bellows: ${s.bellows.joi
   return { files, markdown };
 }
 
-/** Adds ?v=<hash of the file> to every asset URL, so a changed image is a new URL GitHub hasn't cached.
- *  `contentOf(path)` returns the file's content (string or Buffer), or null to leave the URL alone. */
-export function versionUrls(md, contentOf) {
-  return md.replace(/(assets\/[A-Za-z0-9_.\/-]+\.(?:svg|webp|png))(?:\?v=[0-9a-f]+)?"/g, (whole, rel) => {
-    const c = contentOf(rel);
-    return c == null ? whole : `${rel}?v=${shortHash(typeof c === 'string' ? c : c.toString('latin1'))}"`;
-  });
+/** Puts each SVG's content hash in its file name (hearth-dark.svg -> hearth-dark.3f9a1c2b.svg) and points the
+ *  markdown at the new names. GitHub serves README images from a cache keyed on the path alone, so a changed
+ *  image under an old name can be served stale for minutes; a new name can't be. */
+export function hashNames(files, md) {
+  const out = new Map(), rename = new Map();
+  for (const [rel, content] of files) {
+    if (/^assets\/.+\.svg$/.test(rel)) {
+      const named = rel.replace(/\.svg$/, `.${shortHash(content)}.svg`);
+      rename.set(rel, named);
+      out.set(named, content);
+    } else out.set(rel, content);
+  }
+  return { files: out, md: md.replace(/assets\/[A-Za-z0-9_.\/-]+?\.svg/g, (p) => rename.get(p) ?? p) };
+}
+
+/** Generated SVGs the markdown no longer points at, in the given folders, to delete after writing. */
+export function stale(listing, md) {
+  const used = new Set(md.match(/assets\/[A-Za-z0-9_.\/-]+?\.svg/g) || []);
+  return listing.filter((rel) => rel.endsWith('.svg') && !used.has(rel));
 }
 
 export function splice(readme, fragment) {

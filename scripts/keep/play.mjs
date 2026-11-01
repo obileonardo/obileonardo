@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { newAge, play } from './rules.mjs';
-import { board, splice, versionUrls, REPO } from './render.mjs';
+import { board, splice, hashNames, stale, REPO } from './render.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const STATE = path.join(ROOT, 'game/state.json');
@@ -57,10 +57,15 @@ export async function loadState(now = new Date().toISOString()) {
 }
 
 // Removes status panels that no longer describe the board. Shared with scripts/build.mjs.
-export async function prunePanels(keep) {
-  for (const f of await readdir(path.join(ROOT, 'assets/keep'))) {
-    if ((f.startsWith('panel-') || f.startsWith('forgebar-')) && !keep.has(`assets/keep/${f}`)) await unlink(path.join(ROOT, 'assets/keep', f));
+// Deletes generated SVGs in `dirs` that the README no longer points at. Shared with scripts/build.mjs.
+export async function pruneUnused(readme, dirs) {
+  const listing = [];
+  for (const dir of dirs) {
+    let names = [];
+    try { names = await readdir(path.join(ROOT, dir)); } catch { continue; }
+    for (const n of names) listing.push(`${dir}/${n}`);
   }
+  for (const rel of stale(listing, readme)) await unlink(path.join(ROOT, rel));
 }
 
 // Writes the state, the tiles and panel it needs, and the README section.
@@ -68,11 +73,13 @@ async function writeBoard(state, B) {
   await mkdir(path.join(ROOT, 'game'), { recursive: true });
   await mkdir(path.join(ROOT, 'assets/keep'), { recursive: true });
   await writeFile(STATE, `${JSON.stringify(state, null, 1)}\n`);
-  const { files, markdown } = board(state, B.THEMES, B);
+  const built = board(state, B.THEMES, B);
+  const { files, md } = hashNames(built.files, built.markdown);
   for (const [rel, svg] of files) await writeFile(path.join(ROOT, rel), svg);
-  await prunePanels(new Set(files.keys()));
   const file = path.join(ROOT, 'README.md');
-  await writeFile(file, splice(await readFile(file, 'utf8'), versionUrls(markdown, (rel) => files.get(rel) ?? null)));
+  const readme = splice(await readFile(file, 'utf8'), md);
+  await writeFile(file, readme);
+  await pruneUnused(readme, ['assets/keep']);
 }
 
 async function openMoves() {
