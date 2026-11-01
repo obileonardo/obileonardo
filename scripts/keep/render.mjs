@@ -12,6 +12,7 @@ export const REPO = 'obileonardo/obileonardo';
 const TILE_WIDTH = '8%'; // seven across beside the panel; tiles carry their own gutter, so no spaces between them
 const PANEL_WIDTH = '41%'; // floats to the right of the board
 
+let CLEAN = true; // set from the build's style in board()
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // ---------------------------------------------------------------- what each square shows
@@ -64,7 +65,7 @@ function dots(t, cells) {
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
       const c = cells[y][x];
-      out += `<rect x="${x * 10 + 1.5}" y="${y * 10 + 1.5}" width="7" height="7" rx="1" fill="${c === '.' ? off : colour[c]}"/>`;
+      out += `<rect x="${x * 10 + 1.5}" y="${y * 10 + 1.5}" width="7" height="7" rx="${CLEAN ? 2.6 : 1}" fill="${c === '.' ? off : colour[c]}"/>`;
     }
   }
   return out;
@@ -148,11 +149,11 @@ function forgeBarSvg(s, t, type) {
 }
 
 function tileFrame(w, t) {
-  return `<rect x="2" y="2" width="${w - 4}" height="96" rx="6" fill="${t.bg}"/>`;
+  return CLEAN ? `<rect x="2" y="2" width="${w - 4}" height="96" rx="12" fill="${t.bg}" stroke="${t.edge}" stroke-width="1.5"/>` : `<rect x="2" y="2" width="${w - 4}" height="96" rx="6" fill="${t.bg}"/>`;
 }
 
 function tileSvg(cells, t) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="2" y="2" width="96" height="96" rx="6" fill="${t.bg}"/>${dots(t, cells)}</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">${tileFrame(100, t)}${dots(t, cells)}</svg>\n`;
 }
 
 // ---------------------------------------------------------------- the status panel
@@ -176,11 +177,11 @@ function panelSvg(s, t, type) {
   const body = (str, x, y, fill = t.ink, anchor = 'start', size = 16) => text(str, { font: 'text', size, x, y, fill, anchor });
   const parts = [];
   let y = 58;
-  parts.push(text(`THE ${ordinal(s.age).toUpperCase()} AGE`, { font: 'display', size: 32, spacing: 1, x: pad, y, fill: t.ink }));
+  parts.push(text(CLEAN ? `The ${ordinal(s.age)} Age` : `THE ${ordinal(s.age).toUpperCase()} AGE`, { font: 'display', size: 32, spacing: CLEAN ? 0 : 1, x: pad, y, fill: t.ink }));
   y += 26; parts.push(label(`since ${day(s.startedAt)}`, pad, y, t.brass));
   y += 18; parts.push(dotRule(pad, W - pad, y, t));
   y += 36;
-  const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + 120 + i * 22}" y="${y - 14}" width="15" height="15" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
+  const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + 120 + i * 22}" y="${y - 14}" width="15" height="15" rx="${CLEAN ? 4 : 0}" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
   parts.push(label('Keep', pad, y), pips, label('Stones', pad + 270, y), body(String(countStones(s)), W - pad, y + 1, t.ink, 'end'));
   y += 32; parts.push(label('On the walls', pad, y));
   const wl = wrapText(walls, 'text', 15, inner);
@@ -263,6 +264,7 @@ function shortHash(str) {
 
 /** Everything the board needs: files to write (path -> svg) and the README section. */
 export function board(s, themes, type) {
+  CLEAN = type.style !== 'pixel';
   const files = new Map();
   const cells = describe(s);
   const keys = new Set(cells.map((d) => d.key));
