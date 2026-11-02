@@ -167,8 +167,9 @@ function tileSvg(cells, t) {
 // A tall scoreboard that sits beside the board: the age, the walls, recent deeds and a numbered
 // ranking of everyone who has played. It is at least as tall as the board it stands next to.
 // The panel is drawn exactly as tall as the board beside it: seven rows of tiles plus the forge row,
-// each 8% of the column, with about 0.5% of inline gap between rows, against a 41% wide panel.
-const PANEL_W = 500, PANEL_H = Math.round(PANEL_W * (8 * 8 + 7 * 0.7) / 41);
+// each 8% of the column, against a 41% wide panel. GitHub leaves 5px between rows in its 846px column
+// (0.59%, measured on the live page): a taller panel hangs below the board and narrows the next gap.
+const PANEL_W = 500, PANEL_H = Math.round(PANEL_W * (8 * 8 + 7 * 0.59) / 41);
 
 function panelSvg(s, t, type) {
   const { text, fontCss, svg, frame, dotRule: rule0, wrapText, layout, fit, TYPE, PAD, TRACK, COL } = type;
