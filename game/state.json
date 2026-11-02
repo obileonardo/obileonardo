@@ -38,18 +38,38 @@
   "E5": {
    "kind": "stone",
    "hp": 2
+  },
+  "B3": {
+   "kind": "stone",
+   "hp": 2,
+   "by": "obileonardo"
   }
  },
  "bellows": [],
  "weapons": [],
  "tally": {
-  "stones": 0,
+  "stones": 1,
   "forged": 0,
   "shots": 0,
   "repelled": 0
  },
- "players": {},
- "deeds": [],
+ "players": {
+  "obileonardo": {
+   "built": 1,
+   "forged": 0,
+   "fired": 0,
+   "last": "2026-11-02T16:46:36Z"
+  }
+ },
+ "deeds": [
+  {
+   "at": "2026-11-02T16:46:36Z",
+   "user": "obileonardo",
+   "deed": "laid a stone at B3"
+  }
+ ],
  "ages": [],
- "seen": []
+ "seen": [
+  39
+ ]
 }
