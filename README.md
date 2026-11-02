@@ -7,13 +7,13 @@
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/hail-traveller-i-m-elvis-dark.0116f0da.svg"><img alt="Hail, traveller. I'm Elvis" src="assets/headings/hail-traveller-i-m-elvis-light.db06e022.svg" height="30"></picture></h3>
 
-I'm a Design Engineer and I've been designing products since 2019. I co-founded [FiveBlooded](https://x.com/FiveBlooded), the studio building [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game. I also founded [Halfwings](https://x.com/HalfwingsInc), the software and hardware development partner for technology businesses. Figma featured my work at [Config 2022](https://www.youtube.com/watch?v=JUTFghsG8nI), and I've [mentored 500+ design students](https://adplist.org/mentors/elvis-obi) across multiple platforms. 
+I'm a Design Engineer and I've been designing products since 2019. I co-founded [FiveBlooded](https://x.com/FiveBlooded), the studio building [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game. I also founded [Halfwings](https://x.com/HalfwingsInc), the software and hardware development partner for technology businesses. Figma featured my work at [Config 2022](https://www.youtube.com/watch?v=JUTFghsG8nI), and I've [mentored 500+ design students](https://adplist.org/mentors/elvis-obi) across multiple platforms.
 
 I now reside in Nairobi, Kenya, where I play chess with locals, hike on weekends and sometimes go on safari to experience nature.
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-ledger-dark.66895017.svg"><img alt="The Ledger" src="assets/headings/the-ledger-light.1f270fcf.svg" height="30"></picture></h3>
 
-<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.5fbb9faf.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.ad6b574b.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.c2201956.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.939ec18f.svg" width="26.4%"></picture></p>
+<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.2bcd48a4.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.31e8ad36.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.99429bfe.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.b28400cb.svg" width="26.4%"></picture></p>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-arsenal-dark.1d92f642.svg"><img alt="The Arsenal" src="assets/headings/the-arsenal-light.dd8940aa.svg" height="30"></picture></h3>
 
