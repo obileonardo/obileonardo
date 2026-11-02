@@ -29,7 +29,7 @@ const PROJECTS = [
     repo: 'obileonardo/hearth-macos',
     what: 'A native macOS menu-bar companion for Home Assistant.',
     built: 'Swift',
-    get: { label: 'Homebrew', url: 'https://github.com/obileonardo/homebrew-hearth' },
+    get: { label: 'GitHub', url: 'https://github.com/obileonardo/hearth-macos' },
   },
   {
     name: 'Clepso',
@@ -47,7 +47,7 @@ const PROJECTS = [
     repo: 'obileonardo/capsa-oss',
     what: 'A local-first library for what you learn about working with AI, with the evidence each item came from. App, MCP server and command line.',
     built: 'TypeScript',
-    get: { label: 'Releases', url: 'https://github.com/obileonardo/capsa-oss/releases' },
+    get: { label: 'GitHub', url: 'https://github.com/obileonardo/capsa-oss' },
   },
   {
     name: 'Builders World',
