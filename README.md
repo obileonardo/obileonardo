@@ -11,7 +11,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-ledger-dark.66895017.svg"><img alt="The Ledger" src="assets/headings/the-ledger-light.1f270fcf.svg" height="30"></picture></h3>
 
-<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.450ac763.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.e6813c1b.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.696dbb8c.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.be71d285.svg" width="26.4%"></picture></p>
+<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.49bc4b11.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.fdbefb59.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.9b7412a2.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.858c4823.svg" width="26.4%"></picture></p>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-arsenal-dark.1d92f642.svg"><img alt="The Arsenal" src="assets/headings/the-arsenal-light.dd8940aa.svg" height="30"></picture></h3>
 
@@ -46,7 +46,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-armoury-dark.36f3271b.svg"><img alt="The Armoury" src="assets/headings/the-armoury-light.9b710aa3.svg" height="30"></picture></h3>
 
-<a href="https://github.com/obileonardo/armoury"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/armoury-dark.b15c15e0.svg"><img alt="The Armoury, 18 tools: Figma, Illustrator, Photoshop, Framer, Unreal Engine, Blender, Three.js, Swift, TypeScript, Rust, Next.js, Python, Vercel, Supabase, Docker, GitHub Actions, Home Assistant, Homebrew. The full list, with how each is used, is at obileonardo/armoury." src="assets/armoury-light.b087374b.svg" width="100%"></picture></a>
+<a href="https://github.com/obileonardo/armoury"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/armoury-dark.76ae033f.svg"><img alt="The Armoury, 29 tools: Figma, Illustrator, Photoshop, Framer, Unreal Engine, Blender, Three.js, Swift, SwiftUI, TypeScript, Rust, Next.js, Python, JavaScript, React, Ruby, Shell, Model Context Protocol, Vite, Playwright, Vercel, Supabase, Docker, GitHub Actions, Home Assistant, Homebrew, PostgreSQL, SQLite, Redis. The full list, with how each is used, is at obileonardo/armoury." src="assets/armoury-light.329c6428.svg" width="100%"></picture></a>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-chronicle-dark.d7c62fa1.svg"><img alt="The Chronicle" src="assets/headings/the-chronicle-light.04438e69.svg" height="30"></picture></h3>
 
