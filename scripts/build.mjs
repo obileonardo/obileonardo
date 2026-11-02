@@ -577,23 +577,26 @@ const MARKS = {
   talk: ['..........', '.iiiiiiii.', '.i......i.', '.i.bbbb.i.', '.i......i.', '.i.bbb..i.', '.iiiiiiii.', '..ii......', '..i.......', '..........'],
   pad: ['..........', '..........', '.iiiiiiii.', 'ii.iiiibii', 'i...iiiiii', 'ii.iiibiii', 'iiiiiiiiii', 'ii......ii', '..........', '..........'],
 };
+// Large marks sit on a small tile; at text size the dots stand alone, filling the mark, so they stay legible.
 function roleMark(t, key, x, y, size) {
-  const inset = size * 0.12, s = (size - 2 * inset) / 10;
-  let out = `<rect x="${x + 0.5}" y="${y + 0.5}" width="${size - 1}" height="${size - 1}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1"/>`;
+  const tile = size >= 24, inset = tile ? size * 0.12 : 0, s = (size - 2 * inset) / 10, d = tile ? 0.72 : 0.8;
+  let out = tile ? `<rect x="${x + 0.5}" y="${y + 0.5}" width="${size - 1}" height="${size - 1}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1"/>` : '';
   MARKS[key].forEach((row, j) => [...row].forEach((c, i) => {
-    if (c !== '.') out += `<rect x="${r1(x + inset + i * s)}" y="${r1(y + inset + j * s)}" width="${r1(s * 0.72)}" height="${r1(s * 0.72)}" fill="${c === 'b' ? t.brass : t.accent}"/>`;
+    if (c !== '.') out += `<rect x="${r1(x + inset + i * s)}" y="${r1(y + inset + j * s)}" width="${r1(s * d)}" height="${r1(s * d)}" fill="${c === 'b' ? t.brass : t.accent}"/>`;
   }));
   return out;
 }
 
-// Newest first, one row per role: the year, its mark, the role with a line about it, and where, linked.
+// Newest first, one row per role: the year, the role with its mark and a line about it, and where, linked.
+// The mark and its words are one piece in the Role column: the mark sits on the row's line, centred on the
+// role's name, and the line about it hangs under the name.
 function timeline(t) {
   const items = [...CHRONICLE].sort((a, b) => b.since - a.since);
-  const W = COL, size = 34, xMark = PAD + 62, xRole = xMark + size + 16, noteW = 330, lh = 16;
+  const W = COL, size = 17, xMark = PAD + 62, xRole = xMark + size + 10, noteW = 330, lh = 16;
   const headY = PAD + capH(TYPE.label);
   const parts = [
     smallCaps('Since', { x: PAD, y: headY, fill: t.muted }),
-    smallCaps('Role', { x: xRole, y: headY, fill: t.muted }),
+    smallCaps('Role', { x: xMark, y: headY, fill: t.muted }),
     smallCaps('Where', { x: W - PAD, y: headY, fill: t.muted, anchor: 'end' }),
   ];
   let y = headY + 14;
@@ -602,11 +605,11 @@ function timeline(t) {
     const note = wrapText(c.field, 'text', TYPE.meta, noteW);
     const top = y + 18, base = top + capH(TYPE.title);
     parts.push(text(String(c.since), { font: 'text', size: TYPE.meta, x: PAD, y: r1(base), fill: i === 0 ? t.brass : t.muted }));
-    if (MARKS[c.mark]) parts.push(roleMark(t, c.mark, xMark, r1(top - 3), size));
+    if (MARKS[c.mark]) parts.push(roleMark(t, c.mark, xMark, r1(base - capH(TYPE.title) / 2 - size / 2), size));
     parts.push(text(caps(c.role), { font: 'display', size: TYPE.title, spacing: ds(0.6), x: xRole, y: r1(base), fill: t.ink }));
     note.forEach((l, j) => parts.push(text(l, { font: 'text', size: TYPE.meta, x: xRole, y: r1(base + 21 + j * lh), fill: t.muted })));
     parts.push(text(c.url ? `${c.house} →` : c.house, { font: 'text', size: TYPE.meta, x: W - PAD, y: r1(base), fill: c.url ? t.accent : t.muted, anchor: 'end' }));
-    y = Math.max(base + 21 + (note.length - 1) * lh, top - 3 + size) + 16;
+    y = base + 21 + (note.length - 1) * lh + 16;
     if (i < items.length - 1) parts.push(dotRule(PAD, W - PAD, y, t));
   });
   const H = r1(y - 16 + PAD);

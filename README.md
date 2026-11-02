@@ -11,7 +11,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-ledger-dark.66895017.svg"><img alt="The Ledger" src="assets/headings/the-ledger-light.1f270fcf.svg" height="30"></picture></h3>
 
-<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.f2e860b3.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.829db3cb.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.31ed1822.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.bc505d11.svg" width="26.4%"></picture></p>
+<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.4dde4fa9.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.71b7f63d.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.6525a61c.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.1ca82211.svg" width="26.4%"></picture></p>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-arsenal-dark.1d92f642.svg"><img alt="The Arsenal" src="assets/headings/the-arsenal-light.dd8940aa.svg" height="30"></picture></h3>
 
@@ -53,7 +53,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-chronicle-dark.d7c62fa1.svg"><img alt="The Chronicle" src="assets/headings/the-chronicle-light.04438e69.svg" height="30"></picture></h3>
 
-<a href="https://www.linkedin.com/in/elvisobi"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/chronicle-dark.2185c17d.svg"><img alt="The Chronicle: 2026, Founder, Halfwings; 2025, Co-founder, FiveBlooded; 2022, Top Creator &amp; Designer, Figma Config; 2022, Mentor, ADPList and other platforms; 2019, Product Designer, Independent and studios." src="assets/chronicle-light.1ed74a22.svg" width="100%"></picture></a>
+<a href="https://www.linkedin.com/in/elvisobi"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/chronicle-dark.7de2db8d.svg"><img alt="The Chronicle: 2026, Founder, Halfwings; 2025, Co-founder, FiveBlooded; 2022, Top Creator &amp; Designer, Figma Config; 2022, Mentor, ADPList and other platforms; 2019, Product Designer, Independent and studios." src="assets/chronicle-light.b6d29869.svg" width="100%"></picture></a>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/latest-dispatches-dark.49b8f5d0.svg"><img alt="Latest Dispatches" src="assets/headings/latest-dispatches-light.d0f30978.svg" height="30"></picture></h3>
 
