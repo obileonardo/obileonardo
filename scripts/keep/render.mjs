@@ -315,9 +315,8 @@ export function board(s, themes, type) {
 ${panelImg}
 ${rows.join('\n<br>\n')}
 <br>
-${picture(bar, `The forge. ${s.bellows.length ? `In the bellows: ${s.bellows.join(', ')}` : 'The bellows are cold'}.`, '32%')}${forge}
+${picture(bar, `The forge. ${s.bellows.length ? `In the bellows: ${s.bellows.join(', ')}` : 'The bellows are cold'}.`, '32%')}${forge}<br clear="right">
 </p>
-<br clear="right">
 <!-- keep:end -->`;
   return { files, markdown };
 }
