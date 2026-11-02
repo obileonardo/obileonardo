@@ -30,7 +30,6 @@ RAIL = 133        # rail top
 RIVER = 139       # water's edge
 YY, XX = np.mgrid[0:H, 0:W]
 CROP = 30         # rows of empty sky trimmed off the top of the final frame
-OUT_H = H - CROP + 42
 
 
 def rgb(h):
@@ -1274,8 +1273,41 @@ def tiny(cv, s, x, y, col):
         x += 4
 
 
-BAR_H = 42
-BAR_Y = 10   # top padding; the content is 23 px tall, so the bottom padding matches
+class Grid(Canvas):
+    """A canvas drawn in blocks of `u` output pixels: the caption bar's own pixel grid, finer than the scene's."""
+    def __init__(self, c, u):
+        super().__init__(c)
+        self.u = u
+
+    def px(self, x, y, col):
+        Canvas.rect(self, int(round(x)) * self.u, int(round(y)) * self.u, self.u, self.u, col)
+
+    def rect(self, x, y, w, h, col):
+        Canvas.rect(self, x * self.u, y * self.u, w * self.u, h * self.u, col)
+
+
+# The caption bar is drawn at the output's resolution, not the scene's, so it can be smaller than the scene's
+# pixels allow: its pixel is 4 output pixels where the scene's is 5, so its type and timeline are 20% smaller.
+BAR_U = max(1, round(SCALE * 0.8))
+BAR_GW = (W * SCALE) // BAR_U       # the bar's width in its own pixels
+BAR_PAD = 10                        # padding on every side, in bar pixels
+BAR_GH = BAR_PAD + 24 + BAR_PAD     # the era's name, the track and the years are 24 bar pixels tall
+BAR_PX = BAR_GH * BAR_U             # the bar's height in output pixels
+# The year's dots: 11 px apart and 8 px wide, against 15 and 10 before, so the year is about 25% smaller.
+YEAR_PITCH, YEAR_DOT = max(1, round(SCALE * 2.2)), max(1, round(SCALE * 1.6))
+YEAR_ADVANCE = round(YEAR_PITCH * 17 / 3)
+
+
+def year_dots(c, s, x, y, col):
+    """The year in big dots, drawn straight onto output pixels. Returns its right edge."""
+    cv = Canvas(c)
+    for ch in s:
+        for j, row in enumerate(FONT.get(ch, FONT[' ']).split('|')):
+            for i, v in enumerate(row):
+                if v == '#':
+                    cv.rect(x + i * YEAR_PITCH, y + j * YEAR_PITCH, YEAR_DOT, YEAR_DOT, col)
+        x += YEAR_ADVANCE
+    return x - YEAR_ADVANCE + 4 * YEAR_PITCH + YEAR_DOT
 
 
 def caption_bar(P, tt):
@@ -1284,29 +1316,33 @@ def caption_bar(P, tt):
     e, p = era_at(tt)
     ink = rgb('#f4efe6') if P['night'] else rgb('#1c1a22')
     paper = rgb('#080a14') if P['night'] else rgb('#f4efe6')
-    dim = mix(ink, paper, 0.66)
     acc = P['accent']
-    cv = Canvas(np.zeros((BAR_H, W, 3), np.uint8))
-    cv.c[:] = paper
-    cv.hline(0, W - 1, 0, mix(ink, paper, 0.8))
-    big_dots(cv, str(year_at(tt)), 10, BAR_Y, ink, None)
-    tx0, tx1 = 84, W - 10
-    dot_text(cv, ERAS[e][2], tx0, BAR_Y, P['accent2'])
+    c = np.zeros((BAR_PX, W * SCALE, 3), np.uint8)
+    c[:] = paper
+    g = Grid(c, BAR_U)
+    g.hline(0, BAR_GW - 1, 0, mix(ink, paper, 0.8))
+    right = year_dots(c, str(year_at(tt)), BAR_PAD * BAR_U, BAR_PAD * BAR_U, ink)
+    # The era's name stays at the left of the timeline. It, the first tick and the first year share one left
+    # edge, and every later tick starts its own year: nothing is centred.
+    tx0 = -(-(right + BAR_PAD * BAR_U) // BAR_U)
+    tx1 = BAR_GW - BAR_PAD
+    label_w = 4 * 4 - 1
+    xs = [round(tx0 + (tx1 - label_w - tx0) * i / (N_ERAS - 1)) for i in range(N_ERAS)]
+    dot_text(g, ERAS[e][2], tx0, BAR_PAD, P['accent2'])
     # The timeline, kept quiet: a one-pixel track, the time passed drawn over it in cobalt, a small
-    # tick per era, and one brass square for now. Labels are soft for the past, brass for the current
+    # tick per era, and one brass square for now. Years are soft for the past, brass for the current
     # era (matching its name above) and faint for what's to come.
-    ty = BAR_Y + 14
-    xs = [tx0 + 7 + (tx1 - tx0 - 15) * i / (N_ERAS - 1) for i in range(N_ERAS)]
+    ty = BAR_PAD + 14
     span = min(1.0, p / 0.85)
     now = xs[e] + ((xs[e + 1] - xs[e]) * span if e < N_ERAS - 1 else 0)
     past, future = mix(ink, paper, 0.42), mix(ink, paper, 0.74)
-    cv.hline(xs[0], xs[-1], ty, future)
-    cv.hline(xs[0], now, ty, acc)
+    g.hline(xs[0], xs[-1], ty, future)
+    g.hline(xs[0], round(now), ty, acc)
     for i, x in enumerate(xs):
-        cv.rect(round(x), ty - 1, 1, 3, acc if i <= e else future)
-        tiny(cv, str(ERAS[i][0]), round(x) - 7, ty + 5, P['accent2'] if i == e else past if i < e else future)
-    cv.rect(round(now) - 1, ty - 1, 3, 3, P['accent2'])
-    return cv.c
+        g.rect(x, ty - 1, 1, 3, acc if i <= e else future)
+        tiny(g, str(ERAS[i][0]), x, ty + 5, P['accent2'] if i == e else past if i < e else future)
+    g.rect(round(now), ty - 1, 3, 3, P['accent2'])
+    return c
 
 
 def finale(cv, P, tt, f, start=(40, STREET - 90), gate=(250, 56)):
@@ -1604,8 +1640,7 @@ def frame(f, P, base):
         c[:, int(max(0, head)):] = old[:, int(max(0, head)):]
         cv = Canvas(c)
         train(cv, P, head - 22, 'uganda', tt)
-    out = np.vstack([c[CROP:], caption_bar(P, tt)])
-    return flash_in(out, P, f, flash, FPS)
+    return flash_in(c[CROP:], P, f, flash, FPS), flash_in(caption_bar(P, tt), P, f, flash, FPS)
 
 
 FPS_J = 25.0
@@ -1652,8 +1687,7 @@ def frame_journey(fj, P, base):
     OVERRIDE = (min(N_ERAS - 1, int(centre // W)), (centre % W) / W if centre < N_ERAS * W - W / 2 else 0.99)
     bar = caption_bar(P, tt)
     OVERRIDE, NO_BUILD = None, False
-    out = np.vstack([cv.c[CROP:], bar])
-    return flash_in(out, P, fj, flash, FPS_J)
+    return flash_in(cv.c[CROP:], P, fj, flash, FPS_J), flash_in(bar, P, fj, flash, FPS_J)
 
 
 def render(name, journey=False):
@@ -1662,6 +1696,12 @@ def render(name, journey=False):
     if journey:
         return [frame_journey(f, P, base) for f in range(N_J)]
     return [frame(f, P, base) for f in range(N)]
+
+
+def compose(scene, bar):
+    """The scene scaled up to the output, with the caption bar (already at output size) underneath."""
+    big = Image.fromarray(scene).resize((W * SCALE, (H - CROP) * SCALE), Image.NEAREST)
+    return Image.fromarray(np.vstack([np.asarray(big), bar]))
 
 
 def main():
@@ -1677,17 +1717,19 @@ def main():
             for name in ('day', 'night'):
                 if only and name != only:
                     continue
-                frames = render(name, fmt == 'journey')
+                frames = [compose(s, b) for s, b in render(name, fmt == 'journey')]
+                fw, fh = frames[0].size
                 tag = f'{fmt}-{variant}-{name}'
                 if sheet:
                     picks = [int((e * ERA_S + ERA_S * 0.6) * fps) for e in range(N_ERAS)] + [len(frames) - int(8 * fps / FPS)]
-                    tiles = [Image.fromarray(frames[i]).resize((W * 2, OUT_H * 2), Image.NEAREST) for i in picks]
+                    th = round(fh * W * 2 / fw)
+                    tiles = [frames[i].resize((W * 2, th), Image.LANCZOS) for i in picks]
                     rows = (len(tiles) + 1) // 2
-                    sh = Image.new('RGB', (W * 4, OUT_H * 2 * rows), 'white')
+                    sh = Image.new('RGB', (W * 4, th * rows), 'white')
                     for i, im in enumerate(tiles):
-                        sh.paste(im, ((i % 2) * W * 2, (i // 2) * OUT_H * 2))
+                        sh.paste(im, ((i % 2) * W * 2, (i // 2) * th))
                     sh.save(sheet.replace('.png', f'-{tag}.png'))
-                imgs = [Image.fromarray(fr).resize((W * SCALE, OUT_H * SCALE), Image.NEAREST) for fr in frames]
+                imgs = frames
                 out = os.path.join(root, 'assets', f'story-{tag}.webp')
                 imgs[0].save(out, save_all=True, append_images=imgs[1:], duration=int(round(1000 / fps)), loop=0, lossless=True, method=3)
                 print(tag, len(frames), 'frames', os.path.getsize(out), 'bytes')
