@@ -99,7 +99,8 @@ const CHRONICLE = [
   { role: 'Product Designer', mark: 'nib', house: 'Independent and studios', field: 'Products, brands and websites. Design Engineer since 2026, designing and building my own software', since: 2019 },
 ];
 
-// The Armoury: tools in use, from the resume, the portfolio and the repos. Up to six per hall.
+// The Armoury: tools in use. The full list lives in obileonardo/armoury (tools.json) and is read at build time;
+// this copy is the fallback when that repository can't be reached. The Armoury, from the resume, the portfolio and the repos. Up to six per hall.
 // An icon is a Simple Icons slug vendored in scripts/icons.json, or { mono } for a typographic mark
 // (Adobe's logos aren't in Simple Icons).
 const ARMOURY = [
@@ -488,8 +489,42 @@ function yearTile(t, year, stats) {
 
 // ---------------------------------------------------------------- the armoury: one wall of tools
 
-function armoury(t) {
-  const tools = ARMOURY.flatMap((r) => r.tools);
+const ARMOURY_REPO = 'obileonardo/armoury';
+const ARMOURY_URL = `https://github.com/${ARMOURY_REPO}`;
+const ARMOURY_SLOTS = 18; // two rows of nine; with more tools than that, the last tile counts the rest
+
+// The tools to show: the featured ones from the armoury repository, in its order, and how many more it holds.
+async function loadArmoury() {
+  try {
+    // ARMOURY_FILE=path/to/tools.json previews a local copy instead.
+    let cfg;
+    if (process.env.ARMOURY_FILE) cfg = JSON.parse(await readFile(process.env.ARMOURY_FILE, 'utf8'));
+    else {
+      const res = await fetch(`https://api.github.com/repos/${ARMOURY_REPO}/contents/tools.json`, {
+        headers: { authorization: `Bearer ${token()}`, accept: 'application/vnd.github.raw+json', 'user-agent': 'profile-build' },
+      });
+      if (!res.ok) throw new Error(`GitHub ${res.status}`);
+      cfg = await res.json();
+    }
+    const featured = cfg.tools.filter((x) => x.featured).slice(0, ARMOURY_SLOTS);
+    return {
+      kinds: cfg.kinds.filter((k) => cfg.tools.some((x) => x.kind === k)),
+      tools: featured.map((x) => [x.icon, x.name]),
+      total: cfg.tools.length,
+      names: cfg.tools.map((x) => x.name),
+    };
+  } catch (err) {
+    console.warn(`Armoury: using the local list (${err.message}).`);
+    const tools = ARMOURY.flatMap((r) => r.tools);
+    return { kinds: ARMOURY.map((r) => r.kind), tools, total: tools.length, names: tools.map(([, l]) => l) };
+  }
+}
+
+function armoury(t, A) {
+  // With more tools than tiles, the last tile says how many more there are; the whole card links to the list.
+  const shown = A.total > ARMOURY_SLOTS ? A.tools.slice(0, ARMOURY_SLOTS - 1) : A.tools.slice(0, ARMOURY_SLOTS);
+  const more = A.total - shown.length;
+  const tools = more > 0 ? [...shown, [{ more }, 'more']] : shown;
   const n = 9, W = COL, cellW = (W - 2 * PAD) / n, box = 40, ms = 11.5, lh = 14;
   const names = tools.map(([, l]) => (layout(l, 'text', ms).width > cellW - 8 ? wrapText(l, 'text', ms, cellW - 8) : [l]));
   const most = Math.max(...names.map((l) => l.length));
@@ -497,23 +532,19 @@ function armoury(t) {
   const textH = 14 + capH(ms) + (most - 1) * lh; // from the bottom of an icon to the last line of its name
   const rowH = box + textH + 22, rows = Math.ceil(tools.length / n);
   const H = r1(top + (rows - 1) * rowH + box + textH + PAD);
-  const cells = tools.map(([slug], i) => {
+  const cells = tools.map(([icon, label], i) => {
     const cx = PAD + cellW * ((i % n) + 0.5), y0 = top + Math.floor(i / n) * rowH;
-    let glyph;
-    if (slug.mono) {
-      glyph = text(slug.mono, { font: 'display', size: 15, x: cx, y: y0 + box / 2 + capH(15) / 2, fill: t.ink, anchor: 'middle' });
-    } else {
-      if (!icons[slug]) throw new Error(`Missing icon in scripts/icons.json: ${slug}`);
-      glyph = `<path transform="translate(${r1(cx - 10)} ${y0 + 10}) scale(${r1((20 / 24) * 1000) / 1000})" d="${icons[slug]}" fill="${t.ink}"/>`;
-    }
-    const words = names[i].map((l, k) => text(l, { font: 'text', size: ms, x: cx, y: y0 + box + 14 + capH(ms) + k * lh, fill: t.ink, anchor: 'middle' })).join('');
+    const mark = typeof icon === 'string' && icons[icon] ? null : icon?.more ? `+${icon.more}` : icon?.mono ?? label.slice(0, 2);
+    const glyph = mark
+      ? text(mark, { font: 'display', size: 15, x: cx, y: y0 + box / 2 + capH(15) / 2, fill: icon?.more ? t.accent : t.ink, anchor: 'middle' })
+      : `<path transform="translate(${r1(cx - 10)} ${y0 + 10}) scale(${r1((20 / 24) * 1000) / 1000})" d="${icons[icon]}" fill="${t.ink}"/>`;
+    const words = names[i].map((l, k) => text(l, { font: 'text', size: ms, x: cx, y: y0 + box + 14 + capH(ms) + k * lh, fill: icon?.more ? t.accent : t.ink, anchor: 'middle' })).join('');
     return `<g class="rise" style="animation-delay:${r1(0.05 + i * 0.03)}s">${pixelShape(r1(cx - box / 2), y0, box, box, 4, t.edge)}${pixelShape(r1(cx - box / 2 + 1), y0 + 1, box - 2, box - 2, 4, t.plate)}
     ${glyph}${words}</g>`;
   });
-  const halls = ARMOURY.map((r) => r.kind).join(' · ');
-  const title = `The Armoury. ${ARMOURY.map((r) => `${r.kind[0].toUpperCase()}${r.kind.slice(1)}: ${r.tools.map(([, l]) => l).join(', ')}`).join('. ')}.`;
+  const halls = A.kinds.join(' · ');
   return svg(
-    W, H, title, `${fontCss('display', 'text', 'label')}\n${CSS_RISE}`,
+    W, H, armouryAlt(A), `${fontCss('display', 'text', 'label')}\n${CSS_RISE}`,
     `${frame(W, H, t)}
   <defs><pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse"><rect x="7.25" y="7.25" width="1.5" height="1.5" fill="${t.edge}"/></pattern></defs>
   <rect x="1" y="1" width="${W - 2}" height="${H - 2}" fill="url(#grid)" opacity=".7"/>
@@ -522,6 +553,8 @@ function armoury(t) {
   ${cells.join('\n  ')}`,
   );
 }
+
+const armouryAlt = (A) => `The Armoury, ${A.total} tools: ${A.names.join(', ')}. The full list, with how each is used, is at ${ARMOURY_REPO}.`;
 
 // ---------------------------------------------------------------- the arsenal: small project cards
 
@@ -721,6 +754,7 @@ async function main() {
   const template = await readFile(path.join(ROOT, 'README.template.md'), 'utf8');
   const HEADINGS = [...template.matchAll(/^#{3,4} (?:❦ )?(.+)$/gm)].map((m) => m[1]);
   const data = await fetchData(new Date());
+  const A = await loadArmoury();
   const files = new Map();
 
   for (const [name, t] of Object.entries(THEMES)) {
@@ -730,7 +764,7 @@ async function main() {
     data.dispatches.forEach((r, i) => files.set(`assets/dispatches/${i}-${name}.svg`, dispatchRow(t, r)));
     PROJECTS.forEach((p, i) => files.set(`assets/arsenal/${slug(p.name)}-${name}.svg`, projectCard(t, p, p.repo ? data.repoInfo.get(p.repo) : null, { right: i % 3 < 2, below: i < PROJECTS.length - 3, lines: projectLines() })));
     files.set(`assets/chronicle-${name}.svg`, timeline(t));
-    files.set(`assets/armoury-${name}.svg`, armoury(t));
+    files.set(`assets/armoury-${name}.svg`, armoury(t, A));
     LINKS.forEach((s, i) => files.set(`assets/seals/${s.id}-${name}.svg`, seal(t, s, { right: i < LINKS.length - 1, below: !!LETTER })));
     if (LETTER) files.set(`assets/seals/${LETTER.id}-${name}.svg`, letterRow(t, LETTER));
   }
@@ -747,6 +781,7 @@ async function main() {
     .replace('{{ARSENAL}}', arsenal())
     .replace('{{DISPATCHES}}', dispatches(data.dispatches))
     .replace('{{CHRONICLE}}', chronicle())
+    .replace('{{ARMOURY}}', linked(ARMOURY_URL, picture('assets/armoury', armouryAlt(A))))
     .replace('{{SEALS}}', seals())
     .replace('{{KEEP}}', () => keep.markdown);
   const leftover = readme.match(/\{\{[A-Z_]+\}\}/);

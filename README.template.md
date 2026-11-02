@@ -21,10 +21,7 @@ I'm a Design Engineer and I've been designing products since 2019. I co-founded 
 
 #### ❦ The Armoury
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/armoury-dark.svg">
-  <img alt="The Armoury. Design: Figma, Illustrator, Photoshop, Framer. Game and 3D: Unreal Engine, Blender, Three.js. Code: Swift, TypeScript, Rust, Next.js, Python. Infrastructure: Vercel, Supabase, Docker, GitHub Actions, Home Assistant, Homebrew." src="assets/armoury-light.svg" width="100%">
-</picture>
+{{ARMOURY}}
 
 #### ❦ The Chronicle
 
