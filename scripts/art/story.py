@@ -1274,28 +1274,31 @@ def tiny(cv, s, x, y, col):
 
 
 class Grid(Canvas):
-    """A canvas drawn in blocks of `u` output pixels: the caption bar's own pixel grid, finer than the scene's."""
-    def __init__(self, c, u):
+    """A canvas drawn in blocks of `u` output pixels, from an origin (ox, oy) in output pixels: the caption
+    bar's own pixel grid, finer than the scene's."""
+    def __init__(self, c, u, ox=0.0, oy=0.0):
         super().__init__(c)
-        self.u = u
+        self.u, self.ox, self.oy = u, ox, oy
 
     def px(self, x, y, col):
-        Canvas.rect(self, int(round(x)) * self.u, int(round(y)) * self.u, self.u, self.u, col)
+        Canvas.rect(self, self.ox + int(round(x)) * self.u, self.oy + int(round(y)) * self.u, self.u, self.u, col)
 
     def rect(self, x, y, w, h, col):
-        Canvas.rect(self, x * self.u, y * self.u, w * self.u, h * self.u, col)
+        Canvas.rect(self, self.ox + x * self.u, self.oy + y * self.u, w * self.u, h * self.u, col)
 
 
 # The caption bar is drawn at the output's resolution, not the scene's, so it can be smaller than the scene's
-# pixels allow: its pixel is 4 output pixels where the scene's is 5, so its type and timeline are 20% smaller.
-BAR_U = max(1, round(SCALE * 0.8))
-BAR_GW = (W * SCALE) // BAR_U       # the bar's width in its own pixels
-BAR_PAD = 10                        # padding on every side, in bar pixels
-BAR_GH = BAR_PAD + 24 + BAR_PAD     # the era's name, the track and the years are 24 bar pixels tall
-BAR_PX = BAR_GH * BAR_U             # the bar's height in output pixels
+# pixels allow. Its pixel is 3.6 output pixels where the scene's is 5 (blocks fall on 3 or 4 whole pixels).
+BAR_U = SCALE * 0.72
+BAR_LINE = max(1, round(SCALE * 0.8))  # the rule between the scene and the bar, in output pixels
+BAR_PAD_PX = 8 * SCALE                 # padding at the bar's edges, in output pixels
+BAR_GAP_PX = 20 * SCALE                # between the year and the era's name and timeline
+BLOCK_H = 24                           # the era's name, the track and the years, in bar pixels
 # The year's dots: 11 px apart and 8 px wide, against 15 and 10 before, so the year is about 25% smaller.
 YEAR_PITCH, YEAR_DOT = max(1, round(SCALE * 2.2)), max(1, round(SCALE * 1.6))
 YEAR_ADVANCE = round(YEAR_PITCH * 17 / 3)
+YEAR_H = 6 * YEAR_PITCH + YEAR_DOT
+BAR_PX = round(2 * BAR_PAD_PX + max(YEAR_H, BLOCK_H * BAR_U))  # the bar's height in output pixels
 
 
 def year_dots(c, s, x, y, col):
@@ -1319,20 +1322,22 @@ def caption_bar(P, tt):
     acc = P['accent']
     c = np.zeros((BAR_PX, W * SCALE, 3), np.uint8)
     c[:] = paper
-    g = Grid(c, BAR_U)
-    g.hline(0, BAR_GW - 1, 0, mix(ink, paper, 0.8))
-    right = year_dots(c, str(year_at(tt)), BAR_PAD * BAR_U, BAR_PAD * BAR_U, ink)
+    Canvas(c).rect(0, 0, W * SCALE, BAR_LINE, mix(ink, paper, 0.8))
+    # The year and the block beside it (the era's name, the track and the years) share one centre line.
+    mid = BAR_LINE + (BAR_PX - BAR_LINE) / 2
+    right = year_dots(c, str(year_at(tt)), BAR_PAD_PX, round(mid - YEAR_H / 2), ink)
+    g = Grid(c, BAR_U, 0, mid - BLOCK_H * BAR_U / 2)
     # The era's name stays at the left of the timeline. It, the first tick and the first year share one left
     # edge, and every later tick starts its own year: nothing is centred.
-    tx0 = -(-(right + BAR_PAD * BAR_U) // BAR_U)
-    tx1 = BAR_GW - BAR_PAD
+    tx0 = round((right + BAR_GAP_PX) / BAR_U)
+    tx1 = int((W * SCALE - BAR_PAD_PX) / BAR_U)
     label_w = 4 * 4 - 1
     xs = [round(tx0 + (tx1 - label_w - tx0) * i / (N_ERAS - 1)) for i in range(N_ERAS)]
-    dot_text(g, ERAS[e][2], tx0, BAR_PAD, P['accent2'])
+    dot_text(g, ERAS[e][2], tx0, 0, P['accent2'])
     # The timeline, kept quiet: a one-pixel track, the time passed drawn over it in cobalt, a small
     # tick per era, and one brass square for now. Years are soft for the past, brass for the current
     # era (matching its name above) and faint for what's to come.
-    ty = BAR_PAD + 14
+    ty = 14
     span = min(1.0, p / 0.85)
     now = xs[e] + ((xs[e + 1] - xs[e]) * span if e < N_ERAS - 1 else 0)
     past, future = mix(ink, paper, 0.42), mix(ink, paper, 0.74)
