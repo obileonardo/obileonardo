@@ -92,11 +92,11 @@ const SEALS = [
 
 // The Chronicle: roles, newest first.
 const CHRONICLE = [
-  { role: 'Founder', house: 'Halfwings', url: 'https://x.com/HalfwingsInc', field: 'Software and hardware development for technology businesses', since: 2026 },
-  { role: 'Co-founder', house: 'FiveBlooded', url: 'https://x.com/FiveBlooded', field: 'Games: Mazerance', since: 2025 },
-  { role: 'Top Creator & Designer', house: 'Figma Config', url: 'https://www.youtube.com/watch?v=JUTFghsG8nI', field: 'Recognised at the opening keynote, one of ~60 worldwide', since: 2022 },
-  { role: 'Mentor', house: 'ADPList and other platforms', url: 'https://adplist.org/mentors/elvis-obi', field: '500+ design students', since: 2022 },
-  { role: 'Product Designer', house: 'Independent and studios', field: 'Products, brands and websites. Design Engineer since 2026, designing and building my own software', since: 2019 },
+  { role: 'Founder', mark: 'crown', house: 'Halfwings', url: 'https://x.com/HalfwingsInc', field: 'Software and hardware development for technology businesses', since: 2026 },
+  { role: 'Co-founder', mark: 'pad', house: 'FiveBlooded', url: 'https://x.com/FiveBlooded', field: 'Games: Mazerance', since: 2025 },
+  { role: 'Top Creator & Designer', mark: 'cup', house: 'Figma Config', url: 'https://www.youtube.com/watch?v=JUTFghsG8nI', field: 'Recognised at the opening keynote, one of ~60 worldwide', since: 2022 },
+  { role: 'Mentor', mark: 'talk', house: 'ADPList and other platforms', url: 'https://adplist.org/mentors/elvis-obi', field: '500+ design students', since: 2022 },
+  { role: 'Product Designer', mark: 'nib', house: 'Independent and studios', field: 'Products, brands and websites. Design Engineer since 2026, designing and building my own software', since: 2019 },
 ];
 
 // The Armoury: tools in use, from the resume, the portfolio and the repos. Up to six per hall.
@@ -567,41 +567,51 @@ function projectCard(t, p, info, { right = false, below = false, lines = 2 } = {
   );
 }
 
-// ---------------------------------------------------------------- the chronicle: one timeline
+// ---------------------------------------------------------------- the chronicle: a ledger of roles
 
+// A mark for each role, drawn on a 10 by 10 grid of square dots like the Keep's tiles: cobalt, with brass details.
+const MARKS = {
+  crown: ['..........', '..........', '.i..ii..i.', '.ii.ii.ii.', '.iiiiiiii.', '.iiiiiiii.', '.ibiiiibi.', '.iiiiiiii.', '..........', '..........'],
+  cup: ['..........', '.iiiiiiii.', 'ii.iiii.ii', 'ii.iiii.ii', '.iiiiiiii.', '..iiiiii..', '....ii....', '...iiii...', '..iibbii..', '..........'],
+  nib: ['....ii....', '...iiii...', '..iiiiii..', '..ii..ii..', '..i.bb.i..', '..ii..ii..', '...iiii...', '....ii....', '....ii....', '..........'],
+  talk: ['..........', '.iiiiiiii.', '.i......i.', '.i.bbbb.i.', '.i......i.', '.i.bbb..i.', '.iiiiiiii.', '..ii......', '..i.......', '..........'],
+  pad: ['..........', '..........', '.iiiiiiii.', 'ii.iiiibii', 'i...iiiiii', 'ii.iiibiii', 'iiiiiiiiii', 'ii......ii', '..........', '..........'],
+};
+function roleMark(t, key, x, y, size) {
+  const inset = size * 0.12, s = (size - 2 * inset) / 10;
+  let out = `<rect x="${x + 0.5}" y="${y + 0.5}" width="${size - 1}" height="${size - 1}" fill="${t.plate}" stroke="${t.edge}" stroke-width="1"/>`;
+  MARKS[key].forEach((row, j) => [...row].forEach((c, i) => {
+    if (c !== '.') out += `<rect x="${r1(x + inset + i * s)}" y="${r1(y + inset + j * s)}" width="${r1(s * 0.72)}" height="${r1(s * 0.72)}" fill="${c === 'b' ? t.brass : t.accent}"/>`;
+  }));
+  return out;
+}
+
+// Newest first, one row per role: the year, its mark, the role with a line about it, and where, linked.
 function timeline(t) {
-  const items = [...CHRONICLE].sort((a, b) => a.since - b.since);
-  const W = COL, textW = 232, x0 = PAD + 4;
-  const stepX = (W - PAD - x0 - 12 - textW) / (items.length - 1);
-  const LH = { year: 26, role: 23, house: 18, field: 17 };
-  // Each entry is a block of lines read top to bottom; the year always sits next to the line.
-  const blocks = items.map((c) => ({ c, field: wrapText(c.field, 'text', TYPE.meta, textW) }));
-  const blockH = (b) => LH.year + LH.role + LH.house + b.field.length * LH.field;
-  const upH = Math.max(...blocks.filter((_, i) => i % 2 === 0).map(blockH));
-  const downH = Math.max(...blocks.filter((_, i) => i % 2 === 1).map(blockH));
-  // The first line's cap sits PAD below the top; the last line's baseline sits PAD above the bottom.
-  const lineY = PAD - (LH.role - 4 - capH(TYPE.title)) + upH + 12;
-  const H = r1(lineY + 12 + downH - 4 + PAD);
-  const parts = [dotRule(PAD, W - PAD, lineY - 1, t, 4, 6)];
-  blocks.forEach((b, i) => {
-    const x = x0 + i * stepX, above = i % 2 === 0;
-    parts.push(`<rect x="${r1(x - 1)}" y="${r1(lineY - 6)}" width="6" height="12" fill="${i === blocks.length - 1 ? t.accent : t.brass}"/>`);
-    const lines = [['year', String(b.c.since)], ['role', caps(b.c.role)], ['house', b.c.house], ...b.field.map((f) => ['field', f])];
-    const order = above ? [lines[1], lines[2], ...lines.slice(3), lines[0]] : lines;
-    let y = above ? lineY - 12 - blockH(b) : lineY + 12;
-    for (const [kind, str] of order) {
-      y += LH[kind];
-      const st = {
-        year: { font: 'display', size: TYPE.stat, fill: t.brass },
-        role: { font: 'display', size: TYPE.title, spacing: ds(0.6), fill: t.ink },
-        house: { font: 'text', size: TYPE.meta, fill: b.c.url ? t.accent : t.muted },
-        field: { font: 'text', size: TYPE.meta, fill: t.muted },
-      }[kind];
-      parts.push(text(str, { ...st, x: r1(x + 12), y: r1(y - 4) }));
-    }
+  const items = [...CHRONICLE].sort((a, b) => b.since - a.since);
+  const W = COL, size = 34, xMark = PAD + 62, xRole = xMark + size + 16, noteW = 330, lh = 16;
+  const headY = PAD + capH(TYPE.label);
+  const parts = [
+    smallCaps('Since', { x: PAD, y: headY, fill: t.muted }),
+    smallCaps('Role', { x: xRole, y: headY, fill: t.muted }),
+    smallCaps('Where', { x: W - PAD, y: headY, fill: t.muted, anchor: 'end' }),
+  ];
+  let y = headY + 14;
+  parts.push(dotRule(PAD, W - PAD, y, t));
+  items.forEach((c, i) => {
+    const note = wrapText(c.field, 'text', TYPE.meta, noteW);
+    const top = y + 18, base = top + capH(TYPE.title);
+    parts.push(text(String(c.since), { font: 'text', size: TYPE.meta, x: PAD, y: r1(base), fill: i === 0 ? t.brass : t.muted }));
+    if (MARKS[c.mark]) parts.push(roleMark(t, c.mark, xMark, r1(top - 3), size));
+    parts.push(text(caps(c.role), { font: 'display', size: TYPE.title, spacing: ds(0.6), x: xRole, y: r1(base), fill: t.ink }));
+    note.forEach((l, j) => parts.push(text(l, { font: 'text', size: TYPE.meta, x: xRole, y: r1(base + 21 + j * lh), fill: t.muted })));
+    parts.push(text(c.url ? `${c.house} →` : c.house, { font: 'text', size: TYPE.meta, x: W - PAD, y: r1(base), fill: c.url ? t.accent : t.muted, anchor: 'end' }));
+    y = Math.max(base + 21 + (note.length - 1) * lh, top - 3 + size) + 16;
+    if (i < items.length - 1) parts.push(dotRule(PAD, W - PAD, y, t));
   });
+  const H = r1(y - 16 + PAD);
   return svg(
-    W, H, `The Chronicle: ${items.map((c) => `${c.since}, ${c.role}, ${c.house}: ${c.field}`).join('; ')}.`, fontCss('display', 'text', 'label'),
+    W, H, `The Chronicle, newest first: ${items.map((c) => `${c.since}, ${c.role}, ${c.house}: ${c.field}`).join('; ')}.`, fontCss('display', 'text', 'label'),
     `${frame(W, H, t)}\n  ${parts.join('\n  ')}`,
   );
 }
