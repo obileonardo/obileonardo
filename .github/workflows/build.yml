@@ -4,8 +4,7 @@ name: Build profile
 # Hold the Keep. Commits only when something actually changed.
 on:
   schedule:
-    - cron: '17 4 * * *' # daily, 04:17 UTC: everything
-    - cron: '41 * * * *' # hourly: new releases and stars (skips the year-in-review card)
+    - cron: '41 * * * *' # hourly, as a fallback: GitHub drops many scheduled runs
   workflow_dispatch:
   issues:
     types: [opened] # a move in Hold the Keep
@@ -48,7 +47,10 @@ jobs:
         run: node scripts/keep/play.mjs
       - name: Build
         if: github.event_name != 'issues'
-        run: node scripts/build.mjs ${{ github.event.schedule == '41 * * * *' && '--hourly' || '' }}
+        env:
+          # PROFILE_TOKEN is optional. With it, commits and pull requests include private work.
+          GITHUB_TOKEN: ${{ secrets.PROFILE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: node scripts/build.mjs
       - name: Commit changes
         run: |
           if [ -z "$(git status --porcelain)" ]; then
