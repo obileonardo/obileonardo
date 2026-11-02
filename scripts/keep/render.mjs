@@ -171,13 +171,33 @@ function tileSvg(cells, t) {
 // (0.59%, measured on the live page): a taller panel hangs below the board and narrows the next gap.
 const PANEL_W = 500, PANEL_H = Math.round(PANEL_W * (8 * 8 + 7 * 0.59) / 41);
 
+// A busy game has more to say than the panel can hold beside the board, so it shows as much as fits: at
+// most two deeds and three players. A whole deed matters more than a third player, so that goes first; then
+// deeds keep to one line, ending in an ellipsis; then rows go.
 function panelSvg(s, t, type) {
+  let best;
+  for (const [deeds, players, deedLines] of [[2, 3, 2], [2, 2, 2], [2, 3, 1], [2, 2, 1], [1, 3, 1], [1, 2, 1], [1, 1, 1]]) {
+    best = drawPanel(s, t, type, deeds, players, deedLines);
+    if (best.H <= PANEL_H) break;
+  }
+  return best.svg;
+}
+
+function drawPanel(s, t, type, maxDeeds, maxPlayers, deedLines) {
   const { text, fontCss, svg, frame, dotRule: rule0, wrapText, layout, fit, TYPE, PAD, TRACK, COL } = type;
   // Drawn 500 units wide for its share of the page; `u` turns the page's pixel padding and type into units.
   const u = PANEL_W / ((parseFloat(PANEL_WIDTH) / 100) * COL);
   const W = PANEL_W, pad = PAD * u, inner = W - 2 * pad;
   const sz = (k) => TYPE[k] * u, BODY = sz('body'), LH = 26;
   const dotRule = (x0, x1, y, tt) => rule0(x0, x1, y, tt, 4, 6, u);
+  // The first `max` lines of `str`, ending in an ellipsis if anything was left out.
+  const lines = (str, max) => {
+    const all = wrapText(str, 'text', BODY, inner);
+    if (all.length <= max) return all;
+    let last = all[max - 1];
+    while (last && layout(`${last}…`, 'text', BODY).width > inner) last = last.slice(0, -1);
+    return [...all.slice(0, max - 1), `${last.trimEnd()}…`];
+  };
   const keep = s.cells.D4;
   const { armed } = mounts(s);
   const mounted = [...armed].map(([sq, i]) => `${s.weapons[i].name} at ${sq} (${s.weapons[i].charges}/${CHARGES})`);
@@ -195,21 +215,21 @@ function panelSvg(s, t, type) {
   const pips = Array.from({ length: KEEP_HP }, (_, i) => `<rect x="${pad + 120 + i * 24}" y="${y - 14}" width="15" height="15" rx="${CLEAN ? 0 : 0}" fill="${i < keep.hp ? t.accent : t.plate}"/>`).join('');
   parts.push(label('Keep', pad, y), pips, label('Stones', pad + 270, y), body(String(countStones(s)), W - pad, y + 1, t.ink, 'end'));
   y += 32; parts.push(label('On the walls', pad, y));
-  const wl = wrapText(walls, 'text', BODY, inner);
+  const wl = lines(walls, 2);
   wl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * LH, walls === 'none yet' ? t.muted : t.ink, 'start', BODY)));
   y += 26 + LH * wl.length - 2;
   parts.push(dotRule(pad, W - pad, y, t));
   y += 30; parts.push(label('Recent deeds', pad, y));
-  const deeds = s.deeds.slice(0, 3);
+  const deeds = s.deeds.slice(0, maxDeeds);
   y += 26;
   if (!deeds.length) { parts.push(body('No deeds yet. Lay the first stone.', pad, y, t.muted, 'start', BODY)); y += 24; }
   for (const d of deeds) {
-    const lines = wrapText(`@${d.user} ${d.deed}`, 'text', BODY, inner);
-    lines.forEach((l, i) => {
+    // The name keeps its colour, even if the line is cut inside it.
+    const at = `@${d.user}`;
+    lines(`${at} ${d.deed}`, deedLines).forEach((l, i) => {
       if (i === 0) {
-        const at = `@${d.user}`;
-        parts.push(body(at, pad, y, t.accent, 'start', BODY));
-        parts.push(body(l.slice(at.length).trimStart(), pad + layout(`${at} `, 'text', BODY).width, y, t.ink, 'start', BODY));
+        parts.push(body(l.length > at.length ? at : l, pad, y, t.accent, 'start', BODY));
+        if (l.length > at.length) parts.push(body(l.slice(at.length).trimStart(), pad + layout(`${at} `, 'text', BODY).width, y, t.ink, 'start', BODY));
       } else parts.push(body(l, pad, y, t.ink, 'start', BODY));
       y += LH;
     });
@@ -218,7 +238,7 @@ function panelSvg(s, t, type) {
   // The ranking: everyone by moves made, with what they did.
   y += 30; parts.push(label('Ranking', pad, y, t.brass), label('built · forged · fired', W - pad, y, t.muted, 'end'));
   const ranked = Object.entries(s.players).map(([u, pl]) => [u, pl, pl.built + pl.forged + pl.fired]).filter(([, , n]) => n > 0)
-    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0])).slice(0, 4);
+    .sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0])).slice(0, maxPlayers);
   y += 30;
   if (!ranked.length) { parts.push(body('No one yet. Be the first.', pad, y, t.muted, 'start', BODY)); y += 26; }
   ranked.forEach(([name, pl], i) => {
@@ -231,7 +251,7 @@ function panelSvg(s, t, type) {
   y += 30; parts.push(label('Chronicle', pad, y));
   const fallen = s.ages[0];
   const chron = fallen ? `The ${ordinal(fallen.age)} Age stood ${duration(fallen.startedAt, fallen.endedAt)}: ${fallen.stones} stones, ${fallen.forged} weapons, breached by @${fallen.fellTo}.` : 'No castle has fallen yet.';
-  const cl = wrapText(chron, 'text', BODY, inner);
+  const cl = lines(chron, 2);
   cl.forEach((l, i) => parts.push(body(l, pad, y + 26 + i * LH, fallen ? t.ink : t.muted, 'start', BODY)));
   y += 26 + LH * cl.length - 2;
   // A legend for the board's marks, with the tiles themselves in miniature.
@@ -253,7 +273,7 @@ function panelSvg(s, t, type) {
   how.forEach((l, i) => parts.push(body(l, pad, howY + i * howLH, t.muted, 'start', sz('meta'))));
   const H = Math.round(Math.max(PANEL_H, howY + (how.length - 1) * howLH + pad));
   const alt = `Hold the Keep. The ${ordinal(s.age)} Age. Keep ${keep.hp} of ${KEEP_HP}. ${countStones(s)} stones. On the walls: ${walls}. Bellows: ${bellows}. ${deeds.map((d) => `@${d.user} ${d.deed}`).join('. ')}. ${chron}`;
-  return svg(W, H, alt, fontCss('display', 'text', 'label'), `${frame(W, H, t, 6, u)}\n  ${parts.join('\n  ')}`);
+  return { H, svg: svg(W, H, alt, fontCss('display', 'text', 'label'), `${frame(W, H, t, 6, u)}\n  ${parts.join('\n  ')}`) };
 }
 
 // ---------------------------------------------------------------- the board, as files and markdown
