@@ -7,7 +7,9 @@
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/hail-traveller-i-m-elvis-dark.0116f0da.svg"><img alt="Hail, traveller. I'm Elvis" src="assets/headings/hail-traveller-i-m-elvis-light.db06e022.svg" height="30"></picture></h3>
 
-I'm a Design Engineer and I've been designing products since 2019. I co-founded [FiveBlooded](https://x.com/FiveBlooded), the studio building [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game. I also founded [Halfwings](https://x.com/HalfwingsInc), the software and hardware development partner for technology businesses. Figma featured my work at [Config 2022](https://www.youtube.com/watch?v=JUTFghsG8nI), and I've [mentored 500+ design students](https://adplist.org/mentors/elvis-obi) across multiple platforms. I now reside in Nairobi, Kenya, where I play chess with locals, hike on weekends and sometimes go on safari to experience nature.
+I'm a Design Engineer and I've been designing products since 2019. I co-founded [FiveBlooded](https://x.com/FiveBlooded), the studio building [Mazerance](https://x.com/Mazerance), its psychological co-op strategy game. I also founded [Halfwings](https://x.com/HalfwingsInc), the software and hardware development partner for technology businesses. Figma featured my work at [Config 2022](https://www.youtube.com/watch?v=JUTFghsG8nI), and I've [mentored 500+ design students](https://adplist.org/mentors/elvis-obi) across multiple platforms. 
+
+I now reside in Nairobi, Kenya, where I play chess with locals, hike on weekends and sometimes go on safari to experience nature.
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-ledger-dark.66895017.svg"><img alt="The Ledger" src="assets/headings/the-ledger-light.1f270fcf.svg" height="30"></picture></h3>
 
