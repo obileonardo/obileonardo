@@ -13,7 +13,7 @@ I now reside in Nairobi, Kenya, where I play chess with locals, hike on weekends
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-ledger-dark.66895017.svg"><img alt="The Ledger" src="assets/headings/the-ledger-light.1f270fcf.svg" height="30"></picture></h3>
 
-<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.322df74c.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.386064f9.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.29e0f82b.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.9d88a33a.svg" width="26.4%"></picture></p>
+<p><a href="https://github.com/obileonardo?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/ledger-dark.d6e71d82.svg"><img alt="Contribution chart: a year of contributions, one square per day, brighter for busier days." src="assets/ledger-light.dd90582d.svg" width="73.6%"></picture></a><picture><source media="(prefers-color-scheme: dark)" srcset="assets/year-dark.3f8a6006.svg"><img alt="This year's numbers: contributions, commits, pull requests, releases and stars." src="assets/year-light.d85c92a3.svg" width="26.4%"></picture></p>
 
 <h3><picture><source media="(prefers-color-scheme: dark)" srcset="assets/headings/the-arsenal-dark.1d92f642.svg"><img alt="The Arsenal" src="assets/headings/the-arsenal-light.dd8940aa.svg" height="30"></picture></h3>
 
